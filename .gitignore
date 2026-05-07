@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Streamlit
+.streamlit/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Logs and temp
+*.log
+*.tmp
+tmp/
+
+# Claude Code configuration
+CLAUDE.md
+.claudeignore
+
+# Large model files tracked via Git LFS (declared in .gitattributes)
+# These are NOT ignored — LFS handles them
+# Listed here only as documentation
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
