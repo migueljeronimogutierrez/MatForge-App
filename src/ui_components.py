@@ -196,6 +196,43 @@ def render_ai_output_notice() -> None:
     st.markdown(html, unsafe_allow_html=True)
 
 
+def image_to_base64(arr: np.ndarray) -> str:
+    """Encode a float32 numpy array as a base64 PNG string.
+
+    Converts float32 [0, 1] to uint8 [0, 255] before encoding.
+    Handles both (H, W) greyscale and (H, W, 3) RGB arrays.
+
+    Args:
+        arr: float32 numpy array in [0, 1].
+
+    Returns:
+        Base64-encoded PNG string (no data URI prefix).
+    """
+    arr_uint8 = (np.clip(arr, 0.0, 1.0) * 255).astype(np.uint8)
+    if arr_uint8.ndim == 2:
+        pil = Image.fromarray(arr_uint8, mode="L").convert("RGB")
+    else:
+        pil = Image.fromarray(arr_uint8, mode="RGB")
+    buf = io.BytesIO()
+    pil.save(buf, format="PNG")
+    return base64.b64encode(buf.getvalue()).decode("utf-8")
+
+
+def normal_map_to_display(normal: np.ndarray) -> np.ndarray:
+    """Convert a normal map from [-1, 1] to display space [0, 1].
+
+    Applies the standard (n + 1) / 2 remapping used for tangent-space
+    normal map visualisation.
+
+    Args:
+        normal: (H, W, 3) float32 array with values in [-1, 1].
+
+    Returns:
+        (H, W, 3) float32 array with values in [0, 1].
+    """
+    return np.clip((normal + 1.0) / 2.0, 0.0, 1.0)
+
+
 def render_map_grid(
     normal: np.ndarray,
     roughness: np.ndarray,
