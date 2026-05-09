@@ -269,7 +269,7 @@ if generate:
             with st.status("Generating PBR maps…", expanded=True) as status_box:
                 # 1. Load & zoom
                 status_box.write("Loading image…")
-                img = load_and_validate_image(st.session_state["input_image"])
+                img = st.session_state["input_image"]
                 img = apply_zoom(img, st.session_state["zoom"])
 
                 # 2. Optional SR

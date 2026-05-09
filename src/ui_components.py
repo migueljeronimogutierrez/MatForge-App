@@ -310,12 +310,12 @@ def build_threejs_viewer(
     </head>
     <body>
         <script type="importmap">
-        {
-            "imports": {
+        {{
+            "imports": {{
                 "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
                 "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-            }
-        }
+            }}
+        }}
         </script>
 
         <script type="module">
