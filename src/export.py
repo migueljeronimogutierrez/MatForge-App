@@ -7,10 +7,11 @@ Pure logic – only NumPy, Pillow, zipfile, io – no Streamlit, no GPU, no stat
 """
 
 import io
+import xml.etree.ElementTree as ET
 import zipfile
 
 import numpy as np
-from PIL import Image
+from PIL import Image, PngImagePlugin
 
 
 # ---------------------------------------------------------------------------
@@ -60,6 +61,58 @@ _ENGINE_DOCSTRINGS = {
         "        B = Metallic"
     ),
 }
+
+
+# ===================================================================
+# XMP metadata construction and injection
+# ===================================================================
+
+def _build_xmp_packet() -> str:
+    """Create the XMP metadata packet as a string.
+
+    The packet includes the Adobe-standard envelope and a minimal RDF
+    description recording the AI origin of the generated textures.
+    """
+    # Register all namespaces so that ElementTree uses the expected prefixes
+    ET.register_namespace("x", "adobe:ns:meta/")
+    ET.register_namespace("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
+    ET.register_namespace("dc", "http://purl.org/dc/elements/1.1/")
+    ET.register_namespace("xmp", "http://ns.adobe.com/xap/1.0/")
+    ET.register_namespace("xmpRights", "http://ns.adobe.com/xap/1.0/rights/")
+
+    # Build the RDF tree
+    xmpmeta = ET.Element("{adobe:ns:meta/}xmpmeta")
+    rdf = ET.SubElement(xmpmeta, "{http://www.w3.org/1999/02/22-rdf-syntax-ns#}RDF")
+    desc = ET.SubElement(rdf, "{http://www.w3.org/1999/02/22-rdf-syntax-ns#}Description",
+                         attrib={"{http://www.w3.org/1999/02/22-rdf-syntax-ns#}about": ""})
+    desc.set("{http://purl.org/dc/elements/1.1/}creator", "MatForge AI System")
+    desc.set("{http://purl.org/dc/elements/1.1/}rights",
+             "AI-generated content. No copyright protection under EU law (CJEU C-310/17).")
+    desc.set("{http://ns.adobe.com/xap/1.0/}CreatorTool", "MatForge v1.0 — PVT-v2-B1 + FPN")
+    desc.set("{http://ns.adobe.com/xap/1.0/rights/}Marked", "False")
+
+    xmp_tree = ET.tostring(xmpmeta, encoding="unicode")
+    # Wrap in the mandatory Adobe envelope processing instructions
+    packet = '<?xpacket begin="\ufeff" id="W5M0MpCehiHzreSzNTczkc9d"?>\n'
+    packet += xmp_tree + '\n'
+    packet += '<?xpacket end="r"?>'
+    return packet
+
+
+def _inject_xmp_metadata(png_bytes: bytes) -> bytes:
+    """Embed XMP provenance metadata into PNG bytes via an iTXt chunk.
+
+    Reopens the PNG with PIL, attaches the XMP packet under the standard
+    ``XML:com.adobe.xmp`` keyword, and re-encodes. The caller is responsible
+    for passing valid PNG bytes.
+    """
+    xmp_string = _build_xmp_packet()
+    img = Image.open(io.BytesIO(png_bytes))
+    info = PngImagePlugin.PngInfo()
+    info.add_itxt("XML:com.adobe.xmp", xmp_string, lang="", tkey="")
+    out = io.BytesIO()
+    img.save(out, format="PNG", pnginfo=info)
+    return out.getvalue()
 
 
 # ===================================================================
@@ -218,6 +271,18 @@ def _build_mask_map_hdrp(
 
 
 # ===================================================================
+# Public wrapper for XMP injection (thin wrapper, kept here for clarity)
+# ===================================================================
+
+def add_xmp_metadata(png_bytes: bytes) -> bytes:
+    """Embed XMP provenance metadata into PNG bytes.
+
+    This is the public entry point used by the rest of the application.
+    """
+    return _inject_xmp_metadata(png_bytes)
+
+
+# ===================================================================
 # Public API
 # ===================================================================
 
@@ -258,31 +323,58 @@ def export_maps(
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
         for engine in engines:
             if engine == "blender":
-                zf.writestr(f"{asset_name}_normal.png", _pack_normal_opengl(normal))
-                zf.writestr(f"{asset_name}_roughness.png", _pack_roughness(roughness))
-                zf.writestr(f"{asset_name}_metallic.png", _pack_metallic(metallic))
+                zf.writestr(
+                    f"{asset_name}_normal.png",
+                    add_xmp_metadata(_pack_normal_opengl(normal))
+                )
+                zf.writestr(
+                    f"{asset_name}_roughness.png",
+                    add_xmp_metadata(_pack_roughness(roughness))
+                )
+                zf.writestr(
+                    f"{asset_name}_metallic.png",
+                    add_xmp_metadata(_pack_metallic(metallic))
+                )
 
             elif engine == "ue5":
-                zf.writestr(f"T_{asset_name}_N.png", _pack_normal_directx(normal))
-                zf.writestr(f"T_{asset_name}_ORM.png", _build_orm_ue5(roughness, metallic))
+                zf.writestr(
+                    f"T_{asset_name}_N.png",
+                    add_xmp_metadata(_pack_normal_directx(normal))
+                )
+                zf.writestr(
+                    f"T_{asset_name}_ORM.png",
+                    add_xmp_metadata(_build_orm_ue5(roughness, metallic))
+                )
 
             elif engine == "unity_urp":
-                zf.writestr(f"{asset_name}_Normal.png", _pack_normal_opengl(normal))
+                zf.writestr(
+                    f"{asset_name}_Normal.png",
+                    add_xmp_metadata(_pack_normal_opengl(normal))
+                )
                 zf.writestr(
                     f"{asset_name}_MetallicSmoothness.png",
-                    _build_metallic_smoothness_urp(metallic, roughness),
+                    add_xmp_metadata(_build_metallic_smoothness_urp(metallic, roughness))
                 )
 
             elif engine == "unity_hdrp":
-                zf.writestr(f"{asset_name}_Normal.png", _pack_normal_opengl(normal))
+                zf.writestr(
+                    f"{asset_name}_Normal.png",
+                    add_xmp_metadata(_pack_normal_opengl(normal))
+                )
                 zf.writestr(
                     f"{asset_name}_MaskMap.png",
-                    _build_mask_map_hdrp(metallic, roughness),
+                    add_xmp_metadata(_build_mask_map_hdrp(metallic, roughness))
                 )
 
             elif engine == "godot":
-                zf.writestr(f"{asset_name}_normal.png", _pack_normal_opengl(normal))
-                zf.writestr(f"{asset_name}_orm.png", _build_orm_godot(roughness, metallic))
+                zf.writestr(
+                    f"{asset_name}_normal.png",
+                    add_xmp_metadata(_pack_normal_opengl(normal))
+                )
+                zf.writestr(
+                    f"{asset_name}_orm.png",
+                    add_xmp_metadata(_build_orm_godot(roughness, metallic))
+                )
 
     return zip_buffer.getvalue()
 

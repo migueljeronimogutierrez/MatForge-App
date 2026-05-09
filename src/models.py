@@ -1,3 +1,7 @@
+# MatForge model architecture
+# Encoder: PVT-v2-B1 © 2021 Wang et al., Apache License 2.0
+# https://github.com/whai362/PVT
+
 """
 PyTorch model definitions for MatForgeNet.
 

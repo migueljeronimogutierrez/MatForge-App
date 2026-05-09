@@ -1,3 +1,7 @@
+# Material classifier — DINOv2 feature extraction
+# DINOv2 © 2023 Meta AI, Apache License 2.0
+# https://github.com/facebookresearch/dinov2
+
 """
 Material group classifier using DINOv2-small + PCA-50 + KNN.
 
@@ -5,7 +9,6 @@ Loads three pre-computed artifacts from ``artifacts/`` and exposes a
 single-function API that takes a PIL RGB image and returns a
 (group name, confidence distance) tuple.
 """
-
 import gc
 from pathlib import Path
 
