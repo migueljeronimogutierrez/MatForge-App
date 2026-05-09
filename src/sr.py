@@ -110,7 +110,9 @@ CHECKPOINT_FALLBACK = Path("checkpoints/sr/RealESRGAN_x4plus.pth")
 TILE = 256
 STRIDE = 128
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-DTYPE = torch.float16 if DEVICE == "cuda" else torch.float32
+# float16 produces NaN on GTX 1650 Max-Q with both SR checkpoints.
+# float32 required for stable inference, consistent with MatForge.
+DTYPE = torch.float32
 
 # ----------------------------------------------------------------------
 # Model loading – cached to avoid reloads within a session
@@ -212,9 +214,7 @@ def run_sr(image: Image.Image) -> Image.Image:
         for x in range(0, padded_w - TILE + 1, STRIDE):
             tile = img_t[:, :, y:y + TILE, x:x + TILE]  # (1,3,256,256)
             with torch.no_grad():
-                with torch.amp.autocast(device_type=("cuda" if DEVICE == "cuda" else "cpu"),
-                                        enabled=(DEVICE == "cuda")):
-                    out_tile = model(tile)  # (1,3,1024,1024)
+                out_tile = model(tile).float().clamp(0.0, 1.0)
 
             # Place tile in accumulator weighted by upscaled Hann window
             out_y = y * 4
