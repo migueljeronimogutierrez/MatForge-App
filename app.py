@@ -270,8 +270,26 @@ if st.session_state["maps"] is not None:
             result = evaluate_normal_quality(st.session_state["maps"]["normal"])
             st.metric("Overall score", f"{result['overall_score']:.2f}")
             if result["warnings"]:
+                _hard_edge_groups = {
+                    "brick_terracotta", "stone_rough",
+                    "concrete_plaster", "mixed_ambiguous"
+                }
+                _is_hard_edge = (
+                    st.session_state["group_label"] in _hard_edge_groups
+                )
                 for w in result["warnings"]:
-                    st.warning(w)
+                    if _is_hard_edge and "continuity" in w:
+                        st.info(
+                            f"{w} — expected for hard-edge materials "
+                            f"({st.session_state['group_label']})."
+                        )
+                    elif _is_hard_edge and "blockiness" in w:
+                        st.info(
+                            f"{w} — may reflect natural pattern repetition "
+                            f"in {st.session_state['group_label']}."
+                        )
+                    else:
+                        st.warning(w)
             st.image(result["heatmap"], caption="Diagnostic heatmap",
                      use_container_width=True)
 

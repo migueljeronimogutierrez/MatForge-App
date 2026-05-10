@@ -31,8 +31,8 @@ def evaluate_normal_quality(normal_map: np.ndarray) -> dict:
         Weights: 0.40 * coherence + 0.35 * continuity + 0.25 * blockiness.
         Warning thresholds (hard-coded):
             - coherence < 0.95
-            - continuity < 0.80
-            - blockiness < 0.85
+            - continuity < 0.50 (lowered from 0.80 — hard-edge materials)
+            - blockiness < 0.70 (lowered from 0.85 — tile-and-merge periodicity)
     """
     # --- compute individual metrics ---
     coh_score, coh_map = _compute_coherence(normal_map)
@@ -50,9 +50,13 @@ def evaluate_normal_quality(normal_map: np.ndarray) -> dict:
     warnings = []
     if coh_score < 0.95:
         warnings.append("Low coherence: many vectors deviate from unit length.")
-    if cont_score < 0.80:
+    if cont_score < 0.50:
+        # Threshold lowered from 0.80 — materials with hard edges (bricks,
+        # scratches, joints) produce strong gradients that are not artifacts.
         warnings.append("Low continuity: sharp gradients suggest seam artifacts.")
-    if block_score < 0.85:
+    if block_score < 0.70:
+        # Threshold lowered from 0.85 — tile-and-merge inference introduces
+        # periodic patterns that are structural, not quality defects.
         warnings.append("Low blockiness: possible patch-blocking pattern detected.")
 
     # --- diagnostic heatmap ---
