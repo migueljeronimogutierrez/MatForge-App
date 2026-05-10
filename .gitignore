@@ -26,6 +26,9 @@ Thumbs.db
 *.tmp
 tmp/
 
+# Project documentation (local reference only)
+MatForge_App_Arquitectura_Permanente.md
+
 # Claude Code configuration
 CLAUDE.md
 .claudeignore
