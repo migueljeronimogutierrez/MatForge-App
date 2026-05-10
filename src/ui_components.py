@@ -296,8 +296,6 @@ def build_threejs_viewer(
         raise ValueError(f"Unknown geometry '{geometry}'. Choose from {list(geo_map.keys())}")
     geo_code = geo_map[geometry]
 
-    # The HTML uses a self-contained import map with local paths and a
-    # fallback to CDN if local files are not reachable.
     html = f"""
     <!DOCTYPE html>
     <html>
@@ -322,33 +320,56 @@ def build_threejs_viewer(
             import * as THREE from 'three';
             import {{ OrbitControls }} from 'three/addons/controls/OrbitControls.js';
 
-            // --- Scene setup ---
+            // Use container width rather than window.innerWidth to avoid
+            // distortion caused by the Streamlit sidebar narrowing the iframe.
+            const W = document.documentElement.clientWidth;
+            const H = {height};
+
             const scene = new THREE.Scene();
             scene.background = new THREE.Color('{BG_PRIMARY}');
 
-            const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+            const camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 100);
             camera.position.set(0, 0, 3);
 
-            const renderer = new THREE.WebGLRenderer({{ antialias: true, alpha: true }});
+            const renderer = new THREE.WebGLRenderer({{ antialias: true }});
             renderer.setPixelRatio(window.devicePixelRatio);
-            renderer.setSize(window.innerWidth, {height});
+            renderer.setSize(W, H);
+            renderer.outputColorSpace = THREE.SRGBColorSpace;
             document.body.appendChild(renderer.domElement);
 
-            // Lights
-            const ambient = new THREE.AmbientLight(0xffffff, 0.3);
+            // Two directional lights improve PBR readability without an envMap.
+            // A fill light from the opposite side prevents fully black shadows.
+            const ambient = new THREE.AmbientLight(0xffffff, 0.4);
             scene.add(ambient);
-            const directional = new THREE.DirectionalLight(0xffffff, 2.0);
-            directional.position.set(5, 5, 5);
-            scene.add(directional);
+            const light1 = new THREE.DirectionalLight(0xffffff, 2.5);
+            light1.position.set(3, 4, 5);
+            scene.add(light1);
+            const light2 = new THREE.DirectionalLight(0xffeedd, 0.8);
+            light2.position.set(-4, -2, -3);
+            scene.add(light2);
 
-            // Load textures from base64
-            const loader = new THREE.TextureLoader();
-            const normalTex = loader.load('data:image/png;base64,{normal_b64}');
-            const roughnessTex = loader.load('data:image/png;base64,{roughness_b64}');
-            const metallicTex = loader.load('data:image/png;base64,{metallic_b64}');
+            // Helper: load a base64 PNG texture with repeat wrapping for
+            // tiling materials. colorSpace=null keeps linear space for
+            // non-colour data (normal, roughness, metallic).
+            function loadTex(b64, colorSpace) {{
+                const t = new THREE.TextureLoader().load(
+                    'data:image/png;base64,' + b64
+                );
+                t.wrapS = THREE.RepeatWrapping;
+                t.wrapT = THREE.RepeatWrapping;
+                t.repeat.set(2, 2);
+                if (colorSpace) t.colorSpace = colorSpace;
+                return t;
+            }}
 
-            // Material
+            const normalTex    = loadTex('{normal_b64}', null);
+            const roughnessTex = loadTex('{roughness_b64}', null);
+            const metallicTex  = loadTex('{metallic_b64}', null);
+
+            // Neutral grey albedo makes normal/roughness/metallic detail
+            // visible without an envMap. Pure white washes out normal detail.
             const material = new THREE.MeshStandardMaterial({{
+                color: new THREE.Color(0.6, 0.6, 0.6),
                 normalMap: normalTex,
                 normalScale: new THREE.Vector2(1, 1),
                 roughnessMap: roughnessTex,
@@ -357,18 +378,15 @@ def build_threejs_viewer(
                 metalness: 1.0,
             }});
 
-            // Geometry
             const geom = {geo_code};
             const mesh = new THREE.Mesh(geom, material);
             scene.add(mesh);
 
-            // Controls
             const controls = new OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
             controls.autoRotate = true;
             controls.autoRotateSpeed = 0.5;
 
-            // Animate
             function animate() {{
                 requestAnimationFrame(animate);
                 controls.update();
@@ -376,11 +394,11 @@ def build_threejs_viewer(
             }}
             animate();
 
-            // Resize handler
             window.addEventListener('resize', () => {{
-                camera.aspect = window.innerWidth / {height};
+                const nW = document.documentElement.clientWidth;
+                camera.aspect = nW / H;
                 camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, {height});
+                renderer.setSize(nW, H);
             }});
         </script>
     </body>

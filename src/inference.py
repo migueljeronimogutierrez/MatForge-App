@@ -74,10 +74,15 @@ def run_inference(image: Image.Image) -> dict:
 
     _, _, H, W = img_t.shape
 
-    # Reflection-pad so H and W are multiples of STRIDE
-    pad_h = (STRIDE - H % STRIDE) % STRIDE
-    pad_w = (STRIDE - W % STRIDE) % STRIDE
-    img_p = F.pad(img_t, (0, pad_w, 0, pad_h), mode="reflect")
+    # Pad so that every output pixel is covered by at least one tile with
+    # non-trivial Hann weight. TILE // 2 extra on each side guarantees that
+    # border pixels sit at or beyond the Hann window quarter-point rather
+    # than at the zero-weight edge. Reflection padding avoids introducing
+    # new colour statistics at the border.
+    half = TILE // 2
+    pad_h = half + (STRIDE - (H + half) % STRIDE) % STRIDE
+    pad_w = half + (STRIDE - (W + half) % STRIDE) % STRIDE
+    img_p = F.pad(img_t, (half, pad_w, half, pad_h), mode="reflect")
     _, _, H_p, W_p = img_p.shape
 
     hann = _hann_window(TILE, device=DEVICE, dtype=torch.float32)
@@ -106,10 +111,11 @@ def run_inference(image: Image.Image) -> dict:
     roughness_t = acc_r / denom
     metallic_t  = torch.sigmoid(acc_m / denom)
 
-    # Crop to original size
-    normal_t    = normal_t[:, :, :H, :W]
-    roughness_t = roughness_t[:, :, :H, :W]
-    metallic_t  = metallic_t[:, :, :H, :W]
+    # Crop: skip the half-tile padding added at the top-left, then take
+    # exactly the original H×W region.
+    normal_t    = normal_t[:, :, half:half + H, half:half + W]
+    roughness_t = roughness_t[:, :, half:half + H, half:half + W]
+    metallic_t  = metallic_t[:, :, half:half + H, half:half + W]
 
     # Convert to numpy (H, W, C)
     normal_np    = normal_t[0].permute(1, 2, 0).cpu().float().numpy()
