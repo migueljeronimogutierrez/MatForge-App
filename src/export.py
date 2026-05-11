@@ -190,6 +190,21 @@ def _pack_metallic(metallic: np.ndarray) -> bytes:
     packed = _float_to_uint8(m2d)
     return _array_to_png_bytes(packed, "L")
 
+def _pack_color(color: np.ndarray) -> bytes:
+    """Pack a color/albedo map to PNG bytes.
+
+    Args:
+        color: (H, W, 3) float32 in [0, 1], RGB.
+
+    Returns:
+        PNG file bytes, RGB 8-bit.
+    """
+    h, w = color.shape[:2]
+    out = np.zeros((h, w, 3), dtype=np.uint8)
+    out[..., 0] = _float_to_uint8(color[..., 0])
+    out[..., 1] = _float_to_uint8(color[..., 1])
+    out[..., 2] = _float_to_uint8(color[..., 2])
+    return _array_to_png_bytes(out, "RGB")
 
 # ---------------------------------------------------------------------------
 # Packed map builders for engines using combined textures
@@ -292,6 +307,7 @@ def export_maps(
     metallic: np.ndarray,
     asset_name: str = "material",
     engines: list[str] | None = None,
+    color: np.ndarray | None = None,
 ) -> bytes:
     """Package PBR maps as engine‑specific PNGs inside a ZIP archive.
 
@@ -302,6 +318,8 @@ def export_maps(
         asset_name: Base name used for filenames (no spaces recommended).
         engines:   List of target engines. If ``None``, all five are exported.
                    Valid names: "blender", "ue5", "unity_urp", "unity_hdrp", "godot".
+        color:     Optional color/albedo map, (H, W, 3) float32 in [0, 1].
+                   When provided, included in the ZIP with XMP metadata.
 
     Returns:
         Bytes of a ZIP file containing all requested PNGs at the root level.
@@ -310,9 +328,8 @@ def export_maps(
         ValueError: If any element of *engines* is not a recognised engine.
     """
     if engines is None:
-        engines = sorted(_VALID_ENGINES)  # deterministic order
+        engines = sorted(_VALID_ENGINES)
 
-    # Validate engine names
     for e in engines:
         if e not in _VALID_ENGINES:
             raise ValueError(
@@ -335,6 +352,11 @@ def export_maps(
                     f"{asset_name}_metallic.png",
                     add_xmp_metadata(_pack_metallic(metallic))
                 )
+                if color is not None:
+                    zf.writestr(
+                        f"{asset_name}_color.png",
+                        add_xmp_metadata(_pack_color(color))
+                    )
 
             elif engine == "ue5":
                 zf.writestr(
@@ -345,6 +367,11 @@ def export_maps(
                     f"T_{asset_name}_ORM.png",
                     add_xmp_metadata(_build_orm_ue5(roughness, metallic))
                 )
+                if color is not None:
+                    zf.writestr(
+                        f"T_{asset_name}_D.png",
+                        add_xmp_metadata(_pack_color(color))
+                    )
 
             elif engine == "unity_urp":
                 zf.writestr(
@@ -355,6 +382,11 @@ def export_maps(
                     f"{asset_name}_MetallicSmoothness.png",
                     add_xmp_metadata(_build_metallic_smoothness_urp(metallic, roughness))
                 )
+                if color is not None:
+                    zf.writestr(
+                        f"{asset_name}_Albedo.png",
+                        add_xmp_metadata(_pack_color(color))
+                    )
 
             elif engine == "unity_hdrp":
                 zf.writestr(
@@ -365,6 +397,11 @@ def export_maps(
                     f"{asset_name}_MaskMap.png",
                     add_xmp_metadata(_build_mask_map_hdrp(metallic, roughness))
                 )
+                if color is not None:
+                    zf.writestr(
+                        f"{asset_name}_Albedo.png",
+                        add_xmp_metadata(_pack_color(color))
+                    )
 
             elif engine == "godot":
                 zf.writestr(
@@ -375,6 +412,11 @@ def export_maps(
                     f"{asset_name}_orm.png",
                     add_xmp_metadata(_build_orm_godot(roughness, metallic))
                 )
+                if color is not None:
+                    zf.writestr(
+                        f"{asset_name}_albedo.png",
+                        add_xmp_metadata(_pack_color(color))
+                    )
 
     return zip_buffer.getvalue()
 

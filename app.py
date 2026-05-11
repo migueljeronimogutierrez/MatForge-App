@@ -21,7 +21,7 @@ from PIL import Image
 from src.classifier import classify_material
 from src.export import export_maps
 from src.inference import run_inference
-from src.postprocess import adjust_gain_offset, calibrate_by_group, make_tileable_frequency
+from src.postprocess import adjust_gain_offset, blend_materials, calibrate_by_group, make_tileable_frequency
 from src.quality import evaluate_normal_quality
 from src.sr import release_sr_model, run_sr
 from src.ui_components import (
@@ -72,6 +72,7 @@ def init_session_state() -> None:
         "maps_calibrated": None,  # state after calibrate_by_group
         "maps_tileable": None,    # state after make_tileable_frequency
         "maps_adjusted": None,    # state after adjust_gain_offset
+        "maps_blended": None,     # state after blend_materials
         "export_state": "Raw",    # default export state
         "viewer_state": "Raw",    # default 3D viewer state
         "tile_preview_state": "Raw",  # default tiling preview state
@@ -86,6 +87,16 @@ def init_session_state() -> None:
 
 
 init_session_state()
+
+# Apply any pending state redirects before widgets are instantiated
+for _pending, _target in [
+    ("_pending_viewer_state", "viewer_state"),
+    ("_pending_export_state", "export_state"),
+    ("_pending_tile_state",   "tile_preview_state"),
+]:
+    if st.session_state.get(_pending):
+        st.session_state[_target] = st.session_state[_pending]
+        st.session_state[_pending] = None
 
 # ---------------------------------------------------------------------------
 # Time estimation helper (to be moved to utils in a future refactor)
@@ -136,7 +147,8 @@ st.sidebar.divider()
 # ----- file uploader -------------------------------------------------------
 def _on_file_change() -> None:
     invalidate_session_keys([
-        "maps", "maps_raw", "maps_calibrated", "maps_tileable", "maps_adjusted",
+        "maps", "maps_raw", "maps_calibrated", "maps_tileable",
+        "maps_adjusted", "maps_blended",
         "group_label", "knn_distance",
         "warp_points", "warped_image",
     ])
@@ -262,6 +274,7 @@ if generate:
                 st.session_state["maps_adjusted"]  = None
                 st.session_state["maps_calibrated"] = None
                 st.session_state["maps_tileable"]   = None
+                st.session_state["maps_blended"]    = None
                 st.session_state["viewer_state"]    = "Raw"
                 st.session_state["export_state"]    = "Raw"
 
@@ -436,6 +449,8 @@ if st.session_state["maps"] is not None:
     _export_states = {"Raw": "maps_raw"}
     if st.session_state["maps_adjusted"] is not None:
         _export_states["Adjusted"] = "maps_adjusted"
+    if st.session_state["maps_blended"] is not None:
+        _export_states["Blended"] = "maps_blended"
     if st.session_state["maps_calibrated"] is not None:
         _export_states["Calibrated"] = "maps_calibrated"
     if st.session_state["maps_tileable"] is not None:
@@ -455,6 +470,7 @@ if st.session_state["maps"] is not None:
         metallic=_export_source["metallic"],
         asset_name=asset_name,
         engines=[_ENGINE_KEY[engine]],
+        color=_export_source.get("color"),
     )
     st.sidebar.download_button(
         label=f"Download {engine} pack",
@@ -718,6 +734,8 @@ else:
         _viewer_states = {"Raw": "maps_raw"}
         if st.session_state["maps_adjusted"] is not None:
             _viewer_states["Adjusted"] = "maps_adjusted"
+        if st.session_state["maps_blended"] is not None:
+            _viewer_states["Blended"] = "maps_blended"
         if st.session_state["maps_calibrated"] is not None:
             _viewer_states["Calibrated"] = "maps_calibrated"
         if st.session_state["maps_tileable"] is not None:
@@ -779,12 +797,21 @@ else:
 
         # Encode source image as albedo if requested.
         color_b64 = None
-        if show_color and st.session_state["input_image"] is not None:
-            color_arr = np.array(
-                st.session_state["input_image"]
-            ).astype(np.float32) / 255.0
-            color_arr = _cap_texture(color_arr)
-            color_b64 = image_to_base64(color_arr)
+        if show_color:
+            _blended_color = (
+                st.session_state["maps_blended"].get("color")
+                if st.session_state["maps_blended"] is not None
+                else None
+            )
+            if _blended_color is not None and viewer_state_label == "Blended":
+                color_arr = _cap_texture(_blended_color)
+                color_b64 = image_to_base64(color_arr)
+            elif st.session_state["input_image"] is not None:
+                color_arr = np.array(
+                    st.session_state["input_image"]
+                ).astype(np.float32) / 255.0
+                color_arr = _cap_texture(color_arr)
+                color_b64 = image_to_base64(color_arr)
 
         viewer_html = build_threejs_viewer(
             normal_b64=n_b64,
@@ -856,7 +883,115 @@ else:
 
             render_comparison_slider(before_b64, after_b64, height=400)
 
-    # 5. 2x2 Tiling Preview
+    # 5. Material Blender
+    with st.expander("Material Blender (RNM)", expanded=False):
+        st.caption(
+            "Blend the current material (A) with a second material (B) "
+            "using Reoriented Normal Mapping. Upload the three maps for "
+            "material B and set the blend factor."
+        )
+
+        col_b1, col_b2, col_b3, col_b4 = st.columns(4)
+        with col_b1:
+            b_normal_file = st.file_uploader(
+                "Normal map B", type=["png", "jpg", "jpeg"],
+                key="blender_normal_b"
+            )
+        with col_b2:
+            b_rough_file = st.file_uploader(
+                "Roughness map B", type=["png", "jpg", "jpeg"],
+                key="blender_rough_b"
+            )
+        with col_b3:
+            b_metal_file = st.file_uploader(
+                "Metallic map B", type=["png", "jpg", "jpeg"],
+                key="blender_metal_b"
+            )
+        with col_b4:
+            b_color_file = st.file_uploader(
+                "Color map B (optional)", type=["png", "jpg", "jpeg"],
+                key="blender_color_b"
+            )
+
+        blend_alpha = st.slider(
+            "Blend factor (0 = full A, 1 = full B)",
+            0.0, 1.0, 0.5, 0.05,
+            key="blend_alpha",
+        )
+
+        if st.button("Apply Blend", key="apply_blend"):
+            if b_normal_file is None or b_rough_file is None or b_metal_file is None:
+                st.error("Upload all three maps for material B before blending.")
+            else:
+                # Load material A from maps_raw (source of truth)
+                n_a = st.session_state["maps_raw"]["normal"]
+                r_a = st.session_state["maps_raw"]["roughness"]
+                m_a = st.session_state["maps_raw"]["metallic"]
+                H, W = n_a.shape[:2]
+
+                def _load_map_b(f, channels: int) -> np.ndarray:
+                    """Load uploaded map, resize to match material A, return float32."""
+                    img_b = Image.open(f).convert("RGB" if channels == 3 else "L")
+                    if img_b.size != (W, H):
+                        st.warning(
+                            f"{f.name}: resized from {img_b.width}×{img_b.height} "
+                            f"to {W}×{H} to match material A."
+                        )
+                        img_b = img_b.resize((W, H), Image.LANCZOS)
+                    arr = np.array(img_b, dtype=np.float32) / 255.0
+                    if channels == 1:
+                        arr = arr[..., np.newaxis]
+                    return arr
+
+                n_b_packed = _load_map_b(b_normal_file, 3)
+                r_b        = _load_map_b(b_rough_file, 1)
+                m_b        = _load_map_b(b_metal_file, 1)
+
+                # Unpack normal B from [0,1] to [-1,1]
+                n_b = n_b_packed * 2.0 - 1.0
+
+                # Optional color blend
+                color_blended = None
+                if b_color_file is not None and st.session_state["input_image"] is not None:
+                    c_a = np.array(
+                        st.session_state["input_image"].resize((W, H), Image.LANCZOS),
+                        dtype=np.float32
+                    ) / 255.0
+                    c_b_pil = Image.open(b_color_file).convert("RGB")
+                    if c_b_pil.size != (W, H):
+                        st.warning(
+                            f"{b_color_file.name}: resized from "
+                            f"{c_b_pil.width}×{c_b_pil.height} to {W}×{H} "
+                            f"to match material A."
+                        )
+                        c_b_pil = c_b_pil.resize((W, H), Image.LANCZOS)
+                    c_b = np.array(c_b_pil, dtype=np.float32) / 255.0
+                    color_blended = (c_a * (1.0 - blend_alpha) + c_b * blend_alpha).clip(0, 1)
+
+                # Build constant mask from slider
+                mask = np.full((H, W, 1), blend_alpha, dtype=np.float32)
+
+                r_out, m_out, n_out = blend_materials(
+                    r_a, m_a, n_a,
+                    r_b, m_b, n_b,
+                    mask,
+                )
+
+                st.session_state["maps_blended"] = {
+                    "normal":    n_out,
+                    "roughness": r_out,
+                    "metallic":  m_out,
+                    "color":     color_blended,          # None if no color map uploaded
+                }
+                st.session_state["maps"]["normal"]    = n_out
+                st.session_state["maps"]["roughness"] = r_out
+                st.session_state["maps"]["metallic"]  = m_out
+                st.session_state["_pending_viewer_state"] = "Blended"
+                st.session_state["_pending_export_state"] = "Blended"
+                st.session_state["_pending_tile_state"]   = "Blended"
+                st.rerun()
+
+    # 6. 2x2 Tiling Preview
     with st.expander("Tiling Preview", expanded=False):
         st.caption("2×2 tile preview to verify seamless repetition.")
 
@@ -864,6 +999,8 @@ else:
         _tile_states = {"Raw": "maps_raw"}
         if st.session_state["maps_adjusted"] is not None:
             _tile_states["Adjusted"] = "maps_adjusted"
+        if st.session_state["maps_blended"] is not None:
+            _tile_states["Blended"] = "maps_blended"
         if st.session_state["maps_calibrated"] is not None:
             _tile_states["Calibrated"] = "maps_calibrated"
         if st.session_state["maps_tileable"] is not None:
@@ -877,20 +1014,25 @@ else:
                 key="tile_preview_state",
             )
         with col_tm:
+            _tile_map_options = ["Normal", "Roughness", "Metallic"]
+            _tile_source_check = st.session_state[_tile_states[tile_state_label]]
+            if _tile_source_check.get("color") is not None:
+                _tile_map_options.append("Color")
             tile_map_label = st.selectbox(
                 "Map",
-                options=["Normal", "Roughness", "Metallic"],
+                options=_tile_map_options,
                 key="tile_preview_map",
             )
-
         _tile_source = st.session_state[_tile_states[tile_state_label]]
 
         if tile_map_label == "Normal":
             _tile_arr = normal_map_to_display(_tile_source["normal"])
         elif tile_map_label == "Roughness":
             _tile_arr = _tile_source["roughness"].squeeze()
-        else:
+        elif tile_map_label == "Metallic":
             _tile_arr = _tile_source["metallic"].squeeze()
+        else:
+            _tile_arr = _tile_source["color"]
 
         # Cap each tile at 512px before building the 2×2 mosaic (P1)
         _arr_uint8 = (np.clip(_tile_arr, 0, 1) * 255).astype(np.uint8)
