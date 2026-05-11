@@ -73,6 +73,9 @@ def init_session_state() -> None:
         "maps_tileable": None,    # state after make_tileable_frequency
         "maps_adjusted": None,    # state after adjust_gain_offset
         "export_state": "Raw",    # default export state
+        "viewer_state": "Raw",    # default 3D viewer state
+        "tile_preview_state": "Raw",  # default tiling preview state
+        "tile_preview_map": "Normal", # default tiling preview map
         "warp_points": None,      # list[list[int]] — 4 puntos en coords de imagen original
         "warped_image": None,     # PIL.Image — resultado del warp, o None
         "warp_confirmed": False,  # True cuando el usuario hace Apply
@@ -255,6 +258,12 @@ if generate:
                     "roughness": maps["roughness"].copy(),
                     "metallic": maps["metallic"].copy(),
                 }
+                # Reset derived states and viewer to Raw on every new generation
+                st.session_state["maps_adjusted"]  = None
+                st.session_state["maps_calibrated"] = None
+                st.session_state["maps_tileable"]   = None
+                st.session_state["viewer_state"]    = "Raw"
+                st.session_state["export_state"]    = "Raw"
 
                 status_box.update(label="Done.", state="complete", expanded=False)
 
@@ -705,6 +714,26 @@ else:
 
     # 3. 3D Preview expander
     with st.expander("3D Preview", expanded=True):
+        # State selector — mirrors the export state logic
+        _viewer_states = {"Raw": "maps_raw"}
+        if st.session_state["maps_adjusted"] is not None:
+            _viewer_states["Adjusted"] = "maps_adjusted"
+        if st.session_state["maps_calibrated"] is not None:
+            _viewer_states["Calibrated"] = "maps_calibrated"
+        if st.session_state["maps_tileable"] is not None:
+            _viewer_states["Tileable"] = "maps_tileable"
+
+        viewer_state_label = st.selectbox(
+            "Preview state",
+            options=list(_viewer_states.keys()),
+            key="viewer_state",
+            help="Choose which version of the maps to preview in 3D.",
+        )
+        _viewer_source = st.session_state[_viewer_states[viewer_state_label]]
+        _v_normal   = _viewer_source["normal"]
+        _v_roughness = _viewer_source["roughness"]
+        _v_metallic  = _viewer_source["metallic"]
+
         col_geo, col_color = st.columns(2)
         with col_geo:
             geo = st.radio(
@@ -739,10 +768,10 @@ else:
                 return np.array(pil).astype(np.float32) / 255.0
             return arr
 
-        normal_disp = normal_map_to_display(normal)
+        normal_disp = normal_map_to_display(_v_normal)
         normal_disp_capped = _cap_texture(normal_disp)
-        rough_capped = _cap_texture(roughness.squeeze())
-        metal_capped = _cap_texture(metallic.squeeze())
+        rough_capped = _cap_texture(_v_roughness.squeeze())
+        metal_capped = _cap_texture(_v_metallic.squeeze())
 
         n_b64 = image_to_base64(normal_disp_capped)
         r_b64 = image_to_base64(rough_capped)
@@ -830,19 +859,57 @@ else:
     # 5. 2x2 Tiling Preview
     with st.expander("Tiling Preview", expanded=False):
         st.caption("2×2 tile preview to verify seamless repetition.")
-        _normal_disp = normal_map_to_display(normal)
-        _preview_maps = {
-            "Normal": _normal_disp,
-            "Roughness": roughness.squeeze(),
-            "Metallic": metallic.squeeze(),
-        }
-        for map_name, map_arr in _preview_maps.items():
-            arr_uint8 = (np.clip(map_arr, 0, 1) * 255).astype(np.uint8)
-            if arr_uint8.ndim == 2:
-                arr_uint8 = np.stack([arr_uint8] * 3, axis=-1)
-            tiled = np.concatenate([
-                np.concatenate([arr_uint8, arr_uint8], axis=1),
-                np.concatenate([arr_uint8, arr_uint8], axis=1),
-            ], axis=0)
-            st.image(tiled, caption=f"{map_name} — 2×2 tile",
-                     use_container_width=True)
+
+        # State and map selectors
+        _tile_states = {"Raw": "maps_raw"}
+        if st.session_state["maps_adjusted"] is not None:
+            _tile_states["Adjusted"] = "maps_adjusted"
+        if st.session_state["maps_calibrated"] is not None:
+            _tile_states["Calibrated"] = "maps_calibrated"
+        if st.session_state["maps_tileable"] is not None:
+            _tile_states["Tileable"] = "maps_tileable"
+
+        col_ts, col_tm = st.columns(2)
+        with col_ts:
+            tile_state_label = st.selectbox(
+                "State",
+                options=list(_tile_states.keys()),
+                key="tile_preview_state",
+            )
+        with col_tm:
+            tile_map_label = st.selectbox(
+                "Map",
+                options=["Normal", "Roughness", "Metallic"],
+                key="tile_preview_map",
+            )
+
+        _tile_source = st.session_state[_tile_states[tile_state_label]]
+
+        if tile_map_label == "Normal":
+            _tile_arr = normal_map_to_display(_tile_source["normal"])
+        elif tile_map_label == "Roughness":
+            _tile_arr = _tile_source["roughness"].squeeze()
+        else:
+            _tile_arr = _tile_source["metallic"].squeeze()
+
+        # Cap each tile at 512px before building the 2×2 mosaic (P1)
+        _arr_uint8 = (np.clip(_tile_arr, 0, 1) * 255).astype(np.uint8)
+        if _arr_uint8.ndim == 2:
+            _arr_uint8 = np.stack([_arr_uint8] * 3, axis=-1)
+        if _arr_uint8.shape[1] > 512:
+            _pil_tile = Image.fromarray(_arr_uint8)
+            _scale = 512 / _pil_tile.width
+            _pil_tile = _pil_tile.resize(
+                (512, int(_pil_tile.height * _scale)), Image.LANCZOS
+            )
+            _arr_uint8 = np.array(_pil_tile)
+
+        tiled = np.concatenate([
+            np.concatenate([_arr_uint8, _arr_uint8], axis=1),
+            np.concatenate([_arr_uint8, _arr_uint8], axis=1),
+        ], axis=0)
+        st.image(
+            tiled,
+            caption=f"{tile_map_label} ({tile_state_label}) — 2×2 tile",
+            use_container_width=True,
+        )
