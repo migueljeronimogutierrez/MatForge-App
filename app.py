@@ -73,6 +73,7 @@ def init_session_state() -> None:
         "maps_tileable": None,    # state after make_tileable_frequency
         "maps_adjusted": None,    # state after adjust_gain_offset
         "maps_blended": None,     # state after blend_materials
+        "original_image": None,   # pre-SR image, preserved for display metadata
         "export_state": "Raw",    # default export state
         "viewer_state": "Raw",    # default 3D viewer state
         "tile_preview_state": "Raw",  # default tiling preview state
@@ -153,6 +154,7 @@ def _on_file_change() -> None:
         "warp_points", "warped_image",
     ])
     st.session_state["input_image"] = None
+    st.session_state["original_image"] = None
     st.session_state["warp_confirmed"] = False
 
 uploaded_file = st.sidebar.file_uploader(
@@ -163,6 +165,7 @@ uploaded_file = st.sidebar.file_uploader(
 if uploaded_file is not None:
     # store the PIL image directly, replacing any previous value
     st.session_state["input_image"] = Image.open(uploaded_file).convert("RGB")
+    st.session_state["original_image"] = st.session_state["input_image"]
 
 # ----- zoom slider ---------------------------------------------------------
 zoom = st.sidebar.slider(
@@ -178,8 +181,9 @@ zoom = st.sidebar.slider(
     ),
 )
 if st.session_state["input_image"] is not None:
+    _ref_img = st.session_state.get("original_image") or st.session_state["input_image"]
     eff_w, eff_h = get_effective_resolution(
-        st.session_state["input_image"].size,
+        _ref_img.size,
         st.session_state["zoom"],
         st.session_state["use_sr"],
     )
@@ -193,8 +197,9 @@ use_sr = st.sidebar.checkbox(
 if use_sr:
     st.sidebar.warning("SR adds ~8–10 s processing time.")
     if st.session_state["input_image"] is not None:
-        _sr_w = int(st.session_state["input_image"].width * st.session_state["zoom"]) * 4
-        _sr_h = int(st.session_state["input_image"].height * st.session_state["zoom"]) * 4
+        _ref_img = st.session_state.get("original_image") or st.session_state["input_image"]
+        _sr_w = int(_ref_img.width * st.session_state["zoom"]) * 4
+        _sr_h = int(_ref_img.height * st.session_state["zoom"]) * 4
         if _sr_w > 1024 or _sr_h > 1024:
             st.sidebar.error(
                 f"SR will produce a {_sr_w}×{_sr_h} px image. "
@@ -205,8 +210,9 @@ if use_sr:
 
 # ----- time estimate -------------------------------------------------------
 if st.session_state["input_image"] is not None:
+    _ref_for_estimate = st.session_state.get("original_image") or st.session_state["input_image"]
     n_tiles, est_secs = estimate_processing_time(
-        st.session_state["input_image"],
+        _ref_for_estimate,
         st.session_state["zoom"],
         st.session_state["use_sr"],
     )
@@ -254,6 +260,7 @@ if generate:
                     release_sr_model()
                     gc.collect()
                     torch.cuda.empty_cache()
+                    st.session_state["input_image"] = img
 
                 # 3. Material classification
                 status_box.write("Classifying material…")
@@ -464,13 +471,20 @@ if st.session_state["maps"] is not None:
     )
     _export_source = st.session_state[_export_states[export_state_label]]
 
+    # Resolve color: use blended color if available, otherwise input image
+    _export_color = _export_source.get("color")
+    if _export_color is None and st.session_state["input_image"] is not None:
+        _export_color = np.array(
+            st.session_state["input_image"], dtype=np.float32
+        ) / 255.0
+
     zip_bytes = export_maps(
         normal=_export_source["normal"],
         roughness=_export_source["roughness"],
         metallic=_export_source["metallic"],
         asset_name=asset_name,
         engines=[_ENGINE_KEY[engine]],
-        color=_export_source.get("color"),
+        color=_export_color,
     )
     st.sidebar.download_button(
         label=f"Download {engine} pack",
@@ -694,24 +708,11 @@ else:
         with st.expander("Input Image", expanded=False):
             col_img, col_info = st.columns([2, 1])
             with col_img:
-                _input_display = st.session_state["input_image"].copy()
-                if _input_display.width > 480:
-                    _ratio = 480 / _input_display.width
-                    _input_display = _input_display.resize(
-                        (480, int(_input_display.height * _ratio)),
-                        Image.LANCZOS,
-                    )
-                _buf = io.BytesIO()
-                _input_display.save(_buf, format="PNG")
-                _input_b64 = __import__("base64").b64encode(
-                    _buf.getvalue()
-                ).decode("utf-8")
-                st.markdown(
-                    f'<img src="data:image/png;base64,{_input_b64}" '
-                    f'style="max-width:480px; width:100%; border-radius:8px;">',
-                    unsafe_allow_html=True,
+                st.image(
+                    st.session_state["input_image"],
+                    caption="Source image",
+                    use_container_width=True,
                 )
-                st.caption("Source image")
             with col_info:
                 w, h = st.session_state["input_image"].size
                 st.caption(f"**Resolution:** {w}×{h} px")
@@ -833,14 +834,22 @@ else:
             comp_states = {"Raw": "maps_raw"}
             if st.session_state["maps_adjusted"] is not None:
                 comp_states["Adjusted"] = "maps_adjusted"
+            if st.session_state["maps_blended"] is not None:
+                comp_states["Blended"] = "maps_blended"
             if st.session_state["maps_calibrated"] is not None:
                 comp_states["Calibrated"] = "maps_calibrated"
             if st.session_state["maps_tileable"] is not None:
                 comp_states["Tileable"] = "maps_tileable"
 
+            # Color available if input_image exists or blended color exists
+            _comp_has_color = st.session_state["input_image"] is not None
+            _comp_map_options = ["Normal", "Roughness", "Metallic"]
+            if _comp_has_color:
+                _comp_map_options.append("Color")
+
             selected_map = st.selectbox(
                 "Map",
-                options=["Normal", "Roughness", "Metallic"],
+                options=_comp_map_options,
                 key="comparison_map",
             )
 
@@ -861,12 +870,19 @@ else:
             def _get_map_arr(state_key: str, map_name: str) -> np.ndarray:
                 source = st.session_state[state_key]
                 if map_name == "Normal":
-                    # Convert to display space [0,1] for visual comparison
                     return normal_map_to_display(source["normal"])
                 elif map_name == "Roughness":
                     return source["roughness"].squeeze()
-                else:
+                elif map_name == "Metallic":
                     return source["metallic"].squeeze()
+                else:
+                    # Color: use blended color if available, else input_image
+                    blended_color = source.get("color")
+                    if blended_color is not None:
+                        return blended_color
+                    return np.array(
+                        st.session_state["input_image"], dtype=np.float32
+                    ) / 255.0
 
             before_arr = _get_map_arr(comp_states[before_state], selected_map)
             after_arr = _get_map_arr(comp_states[after_state], selected_map)
@@ -1015,8 +1031,7 @@ else:
             )
         with col_tm:
             _tile_map_options = ["Normal", "Roughness", "Metallic"]
-            _tile_source_check = st.session_state[_tile_states[tile_state_label]]
-            if _tile_source_check.get("color") is not None:
+            if st.session_state["input_image"] is not None:
                 _tile_map_options.append("Color")
             tile_map_label = st.selectbox(
                 "Map",
@@ -1032,7 +1047,13 @@ else:
         elif tile_map_label == "Metallic":
             _tile_arr = _tile_source["metallic"].squeeze()
         else:
-            _tile_arr = _tile_source["color"]
+            _blended_c = _tile_source.get("color")
+            if _blended_c is not None:
+                _tile_arr = _blended_c
+            else:
+                _tile_arr = np.array(
+                    st.session_state["input_image"], dtype=np.float32
+                ) / 255.0
 
         # Cap each tile at 512px before building the 2×2 mosaic (P1)
         _arr_uint8 = (np.clip(_tile_arr, 0, 1) * 255).astype(np.uint8)
