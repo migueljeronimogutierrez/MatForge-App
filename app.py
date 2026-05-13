@@ -16,6 +16,7 @@ import numpy as np
 import streamlit as st
 import streamlit.components.v1 as components
 import torch
+import zipfile
 from PIL import Image
 
 from src.classifier import classify_material
@@ -82,9 +83,11 @@ def init_session_state() -> None:
         "viewer_state": "Raw",    # default 3D viewer state
         "tile_preview_state": "Raw",  # default tiling preview state
         "tile_preview_map": "Normal", # default tiling preview map
-        "warp_points": None,      # list[list[int]] — 4 puntos en coords de imagen original
-        "warped_image": None,     # PIL.Image — resultado del warp, o None
-        "warp_confirmed": False,  # True cuando el usuario hace Apply
+        "warp_points": None,      # list[list[int]] — 4 points in original image coordinates
+        "warped_image": None,     # PIL.Image — Warps result, or None
+        "warp_confirmed": False,  # True when user applies
+        "_batch_result_bytes": None,    # bytes of the generated batch ZIP, cached for download
+        "_batch_result_summary": None,  # {"ok": int, "failed": [...], "errors": [...]} or None
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -216,12 +219,12 @@ if generate:
     else:
         try:
             with st.status("Generating PBR maps…", expanded=True) as status_box:
-                # 0. Perspective warp injection
+                # 1. Perspective warp injection
                 img = st.session_state["input_image"]
                 if st.session_state["warp_confirmed"] and st.session_state["warped_image"] is not None:
                     img = st.session_state["warped_image"]
 
-                # 1. Load & zoom
+                # 2. Load & zoom
                 status_box.write("Loading image…")
                 # Prevent zoom from reducing the image below one tile dimension.
                 _min_zoom = max(0.1, 256 / min(img.width, img.height))
@@ -233,7 +236,7 @@ if generate:
                     )
                 img = apply_zoom(img, max(st.session_state["zoom"], _min_zoom))
 
-                # 2. Optional SR
+                # 3. Optional SR
                 st.session_state["sr_was_used"] = st.session_state["use_sr"]
                 if st.session_state["use_sr"]:
                     status_box.write("Running Super-Resolution…")
@@ -243,13 +246,13 @@ if generate:
                     torch.cuda.empty_cache()
                     st.session_state["input_image"] = img
 
-                # 3. Material classification
+                # 4. Material classification
                 status_box.write("Classifying material…")
                 label, distance = classify_material(img)
                 st.session_state["group_label"] = label
                 st.session_state["knn_distance"] = distance
 
-                # 4. MatForge inference
+                # 5. MatForge inference
                 status_box.write("Predicting PBR maps…")
                 maps = run_inference(img)
                 st.session_state["maps"] = maps
@@ -1183,3 +1186,223 @@ else:
             caption=f"{tile_map_label} ({tile_state_label}) — 2×2 tile",
             use_container_width=True,
         )
+
+# 10. Batch ZIP
+with st.expander("Batch ZIP", expanded=False):
+    st.caption(
+        "Process multiple images from a ZIP file in one run. "
+        "Each image goes through the full pipeline (zoom, optional SR, inference) "
+        "and all exported maps are bundled into a single ZIP organised by engine."
+    )
+
+    def _clear_batch_results() -> None:
+        """Reset cached batch output when a new ZIP is uploaded."""
+        st.session_state["_batch_result_bytes"] = None
+        st.session_state["_batch_result_summary"] = None
+
+    col_batch_left, col_batch_right = st.columns(2)
+    with col_batch_left:
+        batch_engine_label = st.selectbox(
+            "Engine",
+            options=["Blender", "Unreal Engine 5", "Unity URP", "Unity HDRP", "Godot 4"],
+            key="batch_engine",
+        )
+        # Resolve engine key immediately — needed both inside and outside the process button
+        _BATCH_ENGINE_KEY = {
+            "Blender": "blender",
+            "Unreal Engine 5": "ue5",
+            "Unity URP": "unity_urp",
+            "Unity HDRP": "unity_hdrp",
+            "Godot 4": "godot",
+        }
+        _batch_engine_key = _BATCH_ENGINE_KEY[batch_engine_label]
+        batch_zoom = st.slider(
+            "Zoom",
+            min_value=0.1,
+            max_value=1.0,
+            step=0.05,
+            value=1.0,
+            key="batch_zoom",
+            help=(
+                "Same rule as individual: 1K→1.0 · 2K→0.5 · 4K→0.25. "
+                "Lower zoom reduces processing time significantly."
+            ),
+        )
+        batch_use_sr = st.checkbox(
+            "Super-Resolution (×4)",
+            key="batch_use_sr",
+        )
+
+    with col_batch_right:
+        batch_zip_file = st.file_uploader(
+            "Upload ZIP with images",
+            type=["zip"],
+            key="batch_zip_upload",
+            on_change=_clear_batch_results,
+        )
+
+    # Pre-flight analysis — only when a ZIP is uploaded
+    if batch_zip_file is not None:
+        # Collect valid image entries and their dimensions in a single pass.
+        # Storing dimensions avoids reopening the ZIP for time estimation.
+        _valid_entries = []       # list of (name, w, h)
+        _oversized_1k = []       # effective resolution after zoom > 1024 px
+        _unreadable = []         # entries PIL could not open
+
+        try:
+            with zipfile.ZipFile(batch_zip_file) as _zf:
+                for _name in _zf.namelist():
+                    if not _name.lower().endswith((".jpg", ".jpeg", ".png", ".webp")):
+                        continue
+                    try:
+                        with _zf.open(_name) as _img_file:
+                            _img = Image.open(_img_file)
+                            _img.load()
+                            _w, _h = _img.size
+                        _valid_entries.append((_name, _w, _h))
+                        _eff_w = max(256, int(round(_w * batch_zoom)))
+                        _eff_h = max(256, int(round(_h * batch_zoom)))
+                        _sr_w = _eff_w * 4 if batch_use_sr else _eff_w
+                        _sr_h = _eff_h * 4 if batch_use_sr else _eff_h
+                        if _sr_w > 1024 or _sr_h > 1024:
+                            _oversized_1k.append(_name)
+                    except Exception:
+                        _unreadable.append(_name)
+        except zipfile.BadZipFile:
+            st.error("The uploaded file is not a valid ZIP archive.")
+            _valid_entries = []
+
+        st.caption(f"Valid images found: **{len(_valid_entries)}**")
+
+        if _oversized_1k:
+            st.warning(
+                "After applying zoom, the effective resolution exceeds 1024 px for these images. "
+                "MatForge was trained on 1K patches — results above this threshold "
+                "may be flat or incoherent:\n\n"
+                + "\n".join(f"- `{n}`" for n in _oversized_1k)
+            )
+        if batch_use_sr and len(_valid_entries) > 3:
+            st.warning(
+                "Super-Resolution adds significant overhead per image. "
+                "Processing more than 3 images with SR active may take a very long time."
+            )
+        if len(_valid_entries) > 10:
+            st.warning(
+                "Processing more than 10 images may be slow. "
+                "Consider splitting the batch or reducing zoom."
+            )
+
+        # Time estimation using dimensions already collected — no second ZIP pass needed
+        def _tile_count(w: int, h: int, zoom: float) -> int:
+            ew = max(256, int(round(w * zoom)))
+            eh = max(256, int(round(h * zoom)))
+            return max(1, 1 + (ew - 256) // 128) * max(1, 1 + (eh - 256) // 128)
+
+        _total_no_sr = 0.0
+        _total_sr = 0.0
+        for _name, _w, _h in _valid_entries:
+            _n_no_sr = _tile_count(_w, _h, batch_zoom)
+            _eff_w_sr = max(256, int(round(_w * batch_zoom))) * 4
+            _eff_h_sr = max(256, int(round(_h * batch_zoom))) * 4
+            _n_sr = max(1, 1 + (_eff_w_sr - 256) // 128) * max(1, 1 + (_eff_h_sr - 256) // 128)
+            _total_no_sr += _n_no_sr * 0.12
+            _total_sr += _n_sr * 0.12 + 9.0
+        # Unreadable entries: assume 9 tiles as conservative fallback
+        _total_no_sr += len(_unreadable) * 9 * 0.12
+        _total_sr += len(_unreadable) * (9 * 0.12 + 9.0)
+
+        st.caption(f"Estimated time without SR: **~{_total_no_sr:.0f} s**")
+        st.caption(f"Estimated time with SR: **~{_total_sr:.0f} s**")
+
+        if len(_valid_entries) > 0:
+            if st.button("Process Batch", key="btn_process_batch"):
+                st.session_state["_batch_result_bytes"] = None
+                st.session_state["_batch_result_summary"] = None
+
+                _master_buffer = io.BytesIO()
+                _ok_count = 0
+                _failed = []
+
+                with st.status("Processing batch…", expanded=True) as _status:
+                    _progress = st.progress(0.0)
+                    _total = len(_valid_entries)
+
+                    with zipfile.ZipFile(batch_zip_file) as _zf, \
+                        zipfile.ZipFile(_master_buffer, "w", zipfile.ZIP_DEFLATED) as _master_zip:
+
+                        for _idx, (_name, _w, _h) in enumerate(_valid_entries):
+                            _status.write(f"Processing **{_name}** ({_idx + 1}/{_total})")
+                            try:
+                                with _zf.open(_name) as _img_file:
+                                    _img = Image.open(_img_file).convert("RGB")
+                                    _img.load()
+
+                                _img = apply_zoom(_img, batch_zoom)
+
+                                if batch_use_sr:
+                                    _img = run_sr(_img)
+                                    release_sr_model()
+                                    gc.collect()
+                                    torch.cuda.empty_cache()
+
+                                _maps = run_inference(_img)
+
+                                # Derive asset name from filename stem
+                                _stem = _name.rsplit("/", 1)[-1].rsplit(".", 1)[0]
+                                _asset = _stem.replace(" ", "_")
+
+                                _color = np.array(_img, dtype=np.float32) / 255.0
+
+                                _per_zip = export_maps(
+                                    normal=_maps["normal"],
+                                    roughness=_maps["roughness"],
+                                    metallic=_maps["metallic"],
+                                    asset_name=_asset,
+                                    engines=[_batch_engine_key],
+                                    color=_color,
+                                )
+
+                                # Merge per-image ZIP into master under a named subfolder
+                                with zipfile.ZipFile(io.BytesIO(_per_zip)) as _inner:
+                                    for _inner_name in _inner.namelist():
+                                        _master_zip.writestr(
+                                            f"{_asset}/{_inner_name}",
+                                            _inner.read(_inner_name),
+                                        )
+
+                                _ok_count += 1
+
+                            except Exception as _exc:
+                                _failed.append((_name, str(_exc)))
+
+                            _progress.progress((_idx + 1) / _total)
+
+                    _status.update(label="Batch complete.", state="complete", expanded=False)
+
+                st.session_state["_batch_result_bytes"] = _master_buffer.getvalue()
+                st.session_state["_batch_result_summary"] = {
+                    "ok": _ok_count,
+                    "errors": _failed,
+                }
+
+    # Results persist across reruns via session state
+    if st.session_state.get("_batch_result_summary") is not None:
+        _summary = st.session_state["_batch_result_summary"]
+        _errors = _summary.get("errors", [])
+        st.divider()
+        st.success(
+            f"Batch complete — **{_summary['ok']}** succeeded, "
+            f"**{len(_errors)}** failed."
+        )
+        if _errors:
+            with st.expander("Failed images"):
+                for _fname, _err in _errors:
+                    st.markdown(f"- **`{_fname}`** — {_err}")
+        if st.session_state.get("_batch_result_bytes") is not None:
+            st.download_button(
+                label="Download Batch ZIP",
+                data=st.session_state["_batch_result_bytes"],
+                file_name=f"matforge_batch_{_batch_engine_key}.zip",
+                mime="application/zip",
+                key="btn_download_batch",
+            )
