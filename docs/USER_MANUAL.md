@@ -51,7 +51,7 @@ The interface is divided into two areas:
 
 **Main area (right)** — map tabs, input image inspector, and all interactive tools (Perspective Correction, Material Blender, Procedural Variations, 3D Preview, Comparison, Tiling Preview, Batch ZIP, Export).
 
-![Sidebar_1](docs/assets/sidebar_1.png)
+![Sidebar_1](assets/sidebar_1.png)
 
 ![Sidebar_2](docs/assets/sidebar_2.png)
 
