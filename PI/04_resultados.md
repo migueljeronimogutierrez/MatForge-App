@@ -46,9 +46,9 @@ En términos perceptuales, `wood` obtiene el mejor LPIPS render (0,2275), mientr
 
 La evidencia visual asociada al OE1 se documenta mediante seis grids PBR. Cada grid compara, para un material representativo, la imagen RGB de entrada, los mapas de referencia y los mapas generados por los modelos evaluados:
 
-![Comparativa PBR — ceramic_0494](assets/grid_ceramic_0494.png)
-
 ![Comparativa PBR — concrete_0180](assets/grid_concrete_0180.png)
+
+![Comparativa PBR — ceramic_0494](assets/grid_ceramic_0494.png)
 
 ![Comparativa PBR — metal_0175](assets/grid_metal_0175.png)
 
