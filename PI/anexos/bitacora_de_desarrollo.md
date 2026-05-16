@@ -962,7 +962,9 @@ Apertura de un nuevo bloque director. Integración completa de `app.py` con todo
 
 ![Commits módulos restantes](../assets/captura37.png)
 
-*Figura 37. Terminal de PowerShell mostrando los commits del día con mensajes semánticos: `feat(src): SR module`, `fix(src): sr weights_only and dead code`, `feat(src): UI design system` y `fix(src): threejs importmap CDN`. Confirmación del historial limpio del repositorio.*
+*Figura 37. Historial de commits verificado mediante `git log` en PowerShell, 
+mostrando los mensajes semánticos de la jornada: módulo SR, correcciones de 
+pesos y código muerto, sistema de diseño UI y fix de Three.js con importmap CDN.*
 
 ---
 
