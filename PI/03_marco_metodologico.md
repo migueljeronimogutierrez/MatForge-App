@@ -277,35 +277,35 @@ La Tabla 5 recoge el resultado del EDA por categoría original de MatSynth. Meta
 
 El script `matforge_eda.py` generó ocho gráficos de distribución que fundamentaron las decisiones de diseño de los filtros F1–F8 y permitieron calibrar los umbrales por categoría. Las figuras que se presentan a continuación documentan las propiedades estadísticas del dataset antes de la limpieza y justifican la elección de umbrales diferenciados frente a un criterio global.
 
-![Distribución de texturas por categoría original de MatSynth](PI/assets/g1_distribucion_categorias.png)
+![Distribución de texturas por categoría original de MatSynth](assets/g1_distribucion_categorias.png)
 
 *Figura 1. Distribución de texturas por categoría original tras la descarga. Evidencia el desequilibrio entre categorías y justifica la estrategia de muestreo ponderado en el entrenamiento.*
 
-![Relación entre desviación estándar del RGB y desviación estándar del Normal](PI/assets/g2_rgb_vs_normal_std.png)
+![Relación entre desviación estándar del RGB y desviación estándar del Normal](assets/g2_rgb_vs_normal_std.png)
 
 *Figura 2. Relación entre la variabilidad cromática (std RGB) y la variabilidad geométrica (std Normal). Las texturas con std\_rgb bajo y std\_normal alto corresponden al patrón del filtro F1 (albedo muerto con relieve fuerte).*
 
-![Distribución del canal azul del mapa Normal](PI/assets/g3_canal_azul_normal.png)
+![Distribución del canal azul del mapa Normal](assets/g3_canal_azul_normal.png)
 
 *Figura 3. Distribución del valor medio del canal azul (componente Z del vector normal) por categoría. Los valores bajos indican vectores que no apuntan predominantemente hacia la cámara, criterio del filtro F2.*
 
-![Relación entre media y desviación estándar del mapa de Roughness](PI/assets/g4_roughness_media_vs_std.png)
+![Relación entre media y desviación estándar del mapa de Roughness](assets/g4_roughness_media_vs_std.png)
 
 *Figura 4. Relación entre media y desviación estándar del mapa de Roughness por categoría. Permite identificar texturas con Roughness completamente plano (std muy bajo) independientemente de su valor medio, criterio del filtro F6.*
 
-![Boxplot de desviación estándar del RGB por categoría](PI/assets/g5_boxplot_std_rgb.png)
+![Boxplot de desviación estándar del RGB por categoría](assets/g5_boxplot_std_rgb.png)
 
 *Figura 5. Distribución de la variabilidad cromática por categoría mediante boxplot. Evidencia que las distribuciones son heterogéneas entre categorías, lo que justifica el uso de umbrales por categoría en lugar de un umbral global para F1.*
 
-![Distribución del mapa Metallic por categoría](PI/assets/g6_metallic_distribucion.png)
+![Distribución del mapa Metallic por categoría](assets/g6_metallic_distribucion.png)
 
 *Figura 6. Distribución del valor medio del mapa Metallic por categoría. Permite identificar texturas con Metallic homogéneamente alto en categorías no metálicas y texturas con Metallic plano en la categoría metal, criterio del filtro F7.*
 
-![Distribución del cociente R/G del mapa Normal](PI/assets/g7_cociente_rg_normal.png)
+![Distribución del cociente R/G del mapa Normal](assets/g7_cociente_rg_normal.png)
 
 *Figura 7. Distribución del cociente entre los canales R y G del mapa Normal. Valores fuera del intervalo [0,70 ; 1,40] indican desequilibrio entre las componentes X e Y del vector normal, criterio del filtro F3.*
 
-![Desviación de la norma de los vectores normales](PI/assets/g8_desviacion_norma_vectores.png)
+![Desviación de la norma de los vectores normales](assets/g8_desviacion_norma_vectores.png)
 
 *Figura 8. Desviación media de la norma de los vectores normales respecto a la unidad. Valores superiores a 0,30 indican vectores no unitarios que invalidan el mapa Normal para su uso en renderizado PBR, criterio del filtro F4.*
 
@@ -339,11 +339,11 @@ Los pesos del sampler reflejan tres criterios: `marble_smooth` y `metal` reciben
 
 Los paneles de visualización UMAP pre- y post-relabeling (Figuras 1 y 2) muestran la separación conseguida en el espacio semántico: el grupo `wood` forma una región compacta y bien delimitada, `metal` aparece como islas dispersas coherentes con su presencia en múltiples categorías originales, y `mixed_ambiguous` se distribuye difusamente, confirmando su naturaleza genuinamente heterogénea.
 
-![Panel UMAP pre-relabeling con categorías originales de MatSynth](PI/assets/panel_B_umap_original_categories.png)
+![Panel UMAP pre-relabeling con categorías originales de MatSynth](assets/panel_B_umap_original_categories.png)
 
 *Figura 1. Proyección UMAP 2D de los embeddings DINOv2-small coloreada por categoría original de MatSynth. La mezcla de categorías en el espacio semántico motiva el relabeling.*
 
-![Panel UMAP post-relabeling con los 8 grupos funcionales asignados](PI/assets/panel_D_functional_groups.png)
+![Panel UMAP post-relabeling con los 8 grupos funcionales asignados](assets/panel_D_functional_groups.png)
 
 *Figura 2. Proyección UMAP 2D coloreada por grupo funcional tras el relabeling. La separación de `wood` (rojo oscuro), `brick_terracotta` y `metal` (islas naranjas) es visible; `mixed_ambiguous` (gris) se distribuye difusamente, confirmando su carácter heterogéneo.*
 
