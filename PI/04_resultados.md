@@ -142,19 +142,19 @@ El primer panel muestra la dispersión de las categorías originales, que no sie
 
 La aplicación final no se limita a ejecutar el modelo MatForge, sino que integra un pipeline local de producción de materiales PBR. Las herramientas se aplican de forma no destructiva mediante estados de mapa acumulativos: `Raw`, `Adjusted`, `Calibrated`, `Blended`, `Tileable` y `Variation`.
 
-![Vista principal de MatForge App](docs/assets/hero_shot.png)
+![Vista principal de MatForge App](../docs/assets/hero_shot.png)
 
 ### 4.4.1. Herramientas de refinado no destructivo (OE4)
 
 **Corrección de perspectiva.** Permite rectificar fotografías tomadas con ángulo mediante cuatro puntos de control antes de ejecutar la inferencia. Esta funcionalidad reduce distorsiones geométricas que afectarían a la predicción PBR.
 
-![Corrección de perspectiva](docs/assets/perspective_correction.png)
+![Corrección de perspectiva](../docs/assets/perspective_correction.png)
 
 **Zoom adaptativo.** Ajusta la escala efectiva de entrada antes del *tile-and-merge*. Su función no es solo acelerar la inferencia, sino mantener la imagen dentro de una distribución espacial compatible con los parches de entrenamiento.
 
-![Panel de controles 1](docs/assets/sidebar_1.png)
+![Panel de controles 1](../docs/assets/sidebar_1.png)
 
-![Panel de controles 2](docs/assets/sidebar_2.png)
+![Panel de controles 2](../docs/assets/sidebar_2.png)
 
 **Ajuste de Roughness y Metallic.** Permite aplicar ganancia y desplazamiento a los canales Roughness y Metallic sin reinferir el modelo. El resultado se almacena en el estado `Adjusted`.
 
@@ -162,25 +162,25 @@ La aplicación final no se limita a ejecutar el modelo MatForge, sino que integr
 
 **Mezcla de materiales mediante RNM.** El mezclador combina dos conjuntos de mapas PBR preservando la coherencia vectorial del Normal map mediante Reoriented Normal Mapping [47].
 
-![Material Blender](docs/assets/material_blender.png)
+![Material Blender](../docs/assets/material_blender.png)
 
 **Variaciones procedurales.** Genera variantes mediante técnicas basadas en ruido FBM, desgaste de bordes y desplazamiento de escala. Su objetivo es reducir repetición visual cuando un mismo material se usa sobre superficies extensas.
 
-![Variaciones procedurales](docs/assets/procedural_variations.png)
+![Variaciones procedurales](../docs/assets/procedural_variations.png)
 
 **Conversión tileable y previsualización.** La herramienta `Make Tileable` reduce costuras visibles al teselar los mapas, y la previsualización 2×2 permite verificar el resultado antes de exportar.
 
-![Previsualización tileable](docs/assets/tiling_preview.png)
+![Previsualización tileable](../docs/assets/tiling_preview.png)
 
 **Visor 3D integrado.** El visor Three.js permite comprobar el material sobre geometrías básicas sin abrir herramientas externas. Esta validación visual inmediata acerca la aplicación al flujo real de artistas técnicos.
 
-![Visor 3D integrado](docs/assets/viewer_3d.png)
+![Visor 3D integrado](../docs/assets/viewer_3d.png)
 
 ### 4.4.2. Exportación multi-motor y metadatos (OE5)
 
 El sistema implementa exportación en ZIP para cinco configuraciones de motor: Blender, Unreal Engine 5, Unity URP, Unity HDRP y Godot 4. Cada motor recibe los mapas con la convención de nombres y empaquetado adecuada. Además, todos los PNG exportados incluyen metadatos XMP embebidos para identificar su procedencia como outputs generados por IA.
 
-![Panel de exportación](docs/assets/export.png)
+![Panel de exportación](../docs/assets/export.png)
 
 | Motor | Normal | Roughness / Metallic | Color |
 |---|---|---|---|
@@ -192,7 +192,7 @@ El sistema implementa exportación en ZIP para cinco configuraciones de motor: B
 
 También se implementó procesado por lotes mediante ZIP. Esta funcionalidad analiza previamente el contenido, advierte sobre resoluciones problemáticas, procesa cada imagen de forma independiente y registra errores sin interrumpir el lote completo.
 
-![Procesado en lote](docs/assets/batch_zip.png)
+![Procesado en lote](../docs/assets/batch_zip.png)
 
 ### 4.4.3. Despliegue local y rendimiento (OE7)
 
