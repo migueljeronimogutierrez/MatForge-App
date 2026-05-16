@@ -51,9 +51,9 @@ La interfaz se divide en dos áreas:
 
 **Área principal (derecha)** — pestañas de mapas, inspector de imagen de entrada y todas las herramientas interactivas (Perspective Correction, Material Blender, Procedural Variations, Visor 3D, Comparison, Tiling Preview, Batch ZIP, Export).
 
-![Sidebar_1](docs/assets/sidebar_1.png)
+![Sidebar_1](assets/sidebar_1.png)
 
-![Sidebar_2](docs/assets/sidebar_2.png)
+![Sidebar_2](assets/sidebar_2.png)
 
 ---
 
@@ -81,7 +81,7 @@ Reducir el zoom disminuye significativamente el tiempo de procesado. El sidebar 
 
 La herramienta **Perspective Correction** está disponible en cuanto se carga una imagen, antes de generar los mapas.
 
-![Corrección de perspectiva](docs/assets/perspective_correction.png)
+![Corrección de perspectiva](assets/perspective_correction.png)
 
 1. Abre el expander **Perspective Correction** en el área principal.
 2. Arrastra los cuatro handles ámbar hasta las esquinas de la superficie a corregir.
@@ -167,7 +167,7 @@ Esta herramienta está marcada como **Beta** — los resultados dependen en gran
 
 Mezcla dos conjuntos de materiales PBR usando Reoriented Normal Mapping (RNM) para el canal Normal e interpolación lineal para Roughness y Metallic.
 
-![Material Blender](docs/assets/material_blender.png)
+![Material Blender](assets/material_blender.png)
 
 1. Sube los mapas Normal B, Roughness B y Metallic B mediante los uploaders disponibles.
 2. Opcionalmente sube un mapa Color B para mezcla de color.
@@ -180,7 +180,7 @@ Si los mapas del material B tienen una resolución distinta a la de los mapas ge
 
 Genera hasta tres variaciones del material base mediante técnicas basadas en ruido. Opera sobre los mapas Raw.
 
-![Variaciones procedurales](docs/assets/procedural_variations.png)
+![Variaciones procedurales](assets/procedural_variations.png)
 
 - **Zonal Mix** — aplica ruido FBM para crear zonas de roughness espacialmente variables.
 - **Worn Edges** — usa los gradientes del normal map para identificar bordes y aplica una máscara de desgaste sobre el roughness.
@@ -194,7 +194,7 @@ Ajusta **Number of variants** (1–3) y **Seed** antes de hacer clic en **Genera
 
 Visor Three.js en tiempo real para evaluar el material generado sobre una superficie 3D.
 
-![Visor 3D](docs/assets/viewer_3d.png)
+![Visor 3D](assets/viewer_3d.png)
 
 - **Geometry** — Sphere, Box o Plane.
 - **Preview state** — selecciona qué estado de mapa mostrar (Raw, Adjusted, Calibrated, Blended, Tileable, Variation).
@@ -214,7 +214,7 @@ Usa los selectores **Left** y **Right** para elegir los estados y canales a comp
 
 Muestra un mosaico 2×2 del mapa seleccionado para evaluar la repetición sin costuras.
 
-![Tiling Preview](docs/assets/tiling_preview.png)
+![Tiling Preview](assets/tiling_preview.png)
 
 Selecciona el **State** (Raw, Adjusted, Calibrated, Blended, Tileable, Variation) y el **Map** (Normal, Roughness, Metallic, Color) a previsualizar. Úsalo tras aplicar Make Tileable para verificar que las costuras no son visibles en los límites de tile.
 
@@ -222,7 +222,7 @@ Selecciona el **State** (Raw, Adjusted, Calibrated, Blended, Tileable, Variation
 
 Procesa múltiples imágenes en una sola ejecución. Sube un archivo ZIP con imágenes JPG, PNG o WEBP.
 
-![Batch ZIP](docs/assets/batch_zip.png)
+![Batch ZIP](assets/batch_zip.png)
 
 **Configuración:**
 - **Engine** — formato de exportación aplicado a todas las imágenes del lote.
@@ -253,7 +253,7 @@ matforge_batch_{motor}.zip
 
 La sección **Export** se encuentra en el área principal, bajo las pestañas de mapas.
 
-![Exportación](docs/assets/export.png)
+![Exportación](assets/export.png)
 
 1. Introduce un **Asset name** (usado como nombre base de los archivos exportados).
 2. Selecciona el **Engine** de destino.
