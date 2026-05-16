@@ -46,17 +46,17 @@ En términos perceptuales, `wood` obtiene el mejor LPIPS render (0,2275), mientr
 
 La evidencia visual asociada al OE1 se documenta mediante seis grids PBR. Cada grid compara, para un material representativo, la imagen RGB de entrada, los mapas de referencia y los mapas generados por los modelos evaluados:
 
-![Comparativa PBR — ceramic_0494](PI/assets/grid_ceramic_0494.png)
+![Comparativa PBR — ceramic_0494](assets/grid_ceramic_0494.png)
 
-![Comparativa PBR — concrete_0180](PI/assets/grid_concrete_0180.png)
+![Comparativa PBR — concrete_0180](assets/grid_concrete_0180.png)
 
-![Comparativa PBR — metal_0175](PI/assets/grid_metal_0175.png)
+![Comparativa PBR — metal_0175](assets/grid_metal_0175.png)
 
-![Comparativa PBR — stone_0201](PI/assets/grid_stone_0201.png)
+![Comparativa PBR — stone_0201](assets/grid_stone_0201.png)
 
-![Comparativa PBR — stone_0480](PI/assets/grid_stone_0480.png)
+![Comparativa PBR — stone_0480](assets/grid_stone_0480.png)
 
-![Comparativa PBR — terracotta_0166](PI/assets/grid_terracotta_0166.png)
+![Comparativa PBR — terracotta_0166](assets/grid_terracotta_0166.png)
 
 Estas figuras permiten comprobar que MatForge conserva mejor la estructura local de los mapas de normales y reduce la sobreestimación de Roughness observada en modelos anteriores. En materiales metálicos, la predicción del canal Metallic aporta una ventaja adicional, ya que Pix2Pix y DeepPBR no cubrían de forma equivalente el mapa metálico.
 
@@ -96,13 +96,13 @@ En consecuencia, el cumplimiento del OE2 debe formularse con matiz técnico: **e
 
 La comparación visual del módulo SR se documenta mediante cuatro grids específicos:
 
-![Comparativa SR — ceramic_0166](PI/assets/sr_grid_ceramic_0166.png)
+![Comparativa SR — ceramic_0166](assets/sr_grid_ceramic_0166.png)
 
-![Comparativa SR — plaster_0095](PI/assets/sr_grid_plaster_0095.png)
+![Comparativa SR — plaster_0095](assets/sr_grid_plaster_0095.png)
 
-![Comparativa SR — stone_0086](PI/assets/sr_grid_stone_0086.png)
+![Comparativa SR — stone_0086](assets/sr_grid_stone_0086.png)
 
-![Comparativa SR — stone_0678](PI/assets/sr_grid_stone_0678.png)
+![Comparativa SR — stone_0678](assets/sr_grid_stone_0678.png)
 
 La evidencia cualitativa confirma que la super-resolución aporta utilidad en entradas de baja resolución, pero también que su integración debe usarse de forma controlada. En imágenes ya suficientemente grandes o alejadas de la distribución de entrenamiento, el módulo puede producir resultados visualmente planos o incoherentes.
 
@@ -130,9 +130,9 @@ El clasificador integrado usa **k = 7**, reducción **PCA-50** y distancia cosen
 
 La evidencia visual del relabeling se recoge en los paneles UMAP:
 
-![UMAP antes del relabeling — categorías originales](PI/assets/panel_B_original_cats.png)
+![UMAP antes del relabeling — categorías originales](assets/panel_B_original_cats.png)
 
-![UMAP después del relabeling — grupos funcionales](PI/assets/panel_D_functional_groups.png)
+![UMAP después del relabeling — grupos funcionales](assets/panel_D_functional_groups.png)
 
 El primer panel muestra la dispersión de las categorías originales, que no siempre se alinean con propiedades físicas útiles para PBR. El segundo panel muestra la reorganización en grupos funcionales, más adecuada para calibración de Roughness, Metallic y análisis de sesgos por tipo de material.
 
@@ -258,17 +258,17 @@ Desde el punto de vista académico, este resultado es valioso porque delimita co
 
 La comparación cualitativa se realizó sobre seis texturas representativas: `ceramic_0494`, `concrete_0180`, `metal_0175`, `stone_0201`, `stone_0480` y `terracotta_0166`. Cada textura fue procesada con MatForge, Materialize y Adobe Substance 3D Sampler, y posteriormente renderizada bajo la misma escena Blender.
 
-![Panel comparativo — ceramic_0494](PI/assets/panel_ceramic_0494.png)
+![Panel comparativo — ceramic_0494](assets/panel_ceramic_0494.png)
 
-![Panel comparativo — concrete_0180](PI/assets/panel_concrete_0180.png)
+![Panel comparativo — concrete_0180](assets/panel_concrete_0180.png)
 
-![Panel comparativo — metal_0175](PI/assets/panel_metal_0175.png)
+![Panel comparativo — metal_0175](assets/panel_metal_0175.png)
 
-![Panel comparativo — stone_0201](PI/assets/panel_stone_0201.png)
+![Panel comparativo — stone_0201](assets/panel_stone_0201.png)
 
-![Panel comparativo — stone_0480](PI/assets/panel_stone_0480.png)
+![Panel comparativo — stone_0480](assets/panel_stone_0480.png)
 
-![Panel comparativo — terracotta_0166](PI/assets/panel_terracotta_0166.png)
+![Panel comparativo — terracotta_0166](assets/panel_terracotta_0166.png)
 
 En materiales metálicos, MatForge muestra un comportamiento especialmente sólido, con mapas Normal y Metallic próximos al ground truth. Materialize presenta limitaciones más acusadas en este tipo de material, ya que sus normales tienden a ser planas o a depender de gradientes de luminancia. Substance 3D Sampler ofrece resultados visualmente convincentes y, en materiales no metálicos con geometría fina, puede mostrar mayor robustez que MatForge debido a la escala de su corpus propietario.
 
