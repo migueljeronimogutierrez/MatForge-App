@@ -29,7 +29,7 @@ El tiempo disponible es extremadamente limitado, con entrega prevista en menos d
 
 *Figura 1. Captura de pantalla de la respuesta con el resumen de la investigación SOTA donde se comparan los planes A, B y C. Se observa el énfasis en modelos jerárquicos y pérdidas físicas.*
 
-![Borrador Vivo inicial](PI/assets/captura02.png)
+![Borrador Vivo inicial](../assets/captura02.png)
 
 *Figura 2. Captura del Borrador Vivo con la estructura inicial de gestión del proyecto y el MVP definido.*
 
@@ -152,7 +152,7 @@ Los límites no alcanzados reflejan que MatSynth no dispone de más texturas de 
 
 Eliminar manualmente las placas base en `metal` y ejecutar el EDA.
 
-![Resumen descarga dataset](PI/assets/captura03.png)
+![Resumen descarga dataset](../assets/captura03.png)
 
 *Figura 3. Captura de la consola mostrando el resumen final del script `matforge_downloader.py`, con las barras de progreso por categoría y el total de 3.814 texturas descargadas.*
 
@@ -227,11 +227,11 @@ Metal fue la categoría con mayor porcentaje de texturas flaggeadas, con un 40,0
 
 Implementar el pipeline de relabeling con DINOv2 + HDBSCAN + UMAP sobre las 3.245 texturas limpias.
 
-![Informe HTML revisión](PI/assets/captura04.png)
+![Informe HTML revisión](../assets/captura04.png)
 
 *Figura 4. Vista del informe HTML de revisión humana mostrando una textura de plaster flaggeada por “Albedo muerto con relieve fuerte”, con los tres thumbnails RGB, Normal y Roughness visibles y el score de descarte.*
 
-![CSV de descarte](PI/assets/captura05.png)
+![CSV de descarte](../assets/captura05.png)
 
 *Figura 5. Captura del CSV `candidates_to_discard.csv` abierto en Excel, mostrando las columnas de score, motivos y la columna `confirmar_descarte` con valores “si”, “no” y “revisar” asignados tras la revisión.*
 
@@ -303,11 +303,11 @@ Fase 2: implementación de la arquitectura MatForge, inicialmente prevista con e
 - `relabeling_output/label_encoder.pkl` — codificador de etiquetas para el KNN.
 - `MatForge PBR Dataset` — dataset privado subido a Kaggle.
 
-![UMAP categorías originales](PI/assets/captura06.png)
+![UMAP categorías originales](../assets/captura06.png)
 
 *Figura 6. Panel B del relabeling pre-procesamiento, mostrando las categorías originales de MatSynth en el espacio UMAP 2D. Se observa la mezcla heterogénea de categorías como stone, ceramic y plaster sin separación clara en el espacio visual.*
 
-![UMAP grupos funcionales](PI/assets/captura07.png)
+![UMAP grupos funcionales](../assets/captura07.png)
 
 *Figura 7. Panel D del relabeling post-procesamiento, mostrando los 8 grupos funcionales asignados en el espacio UMAP 2D. Se observa la separación clara de wood, brick_terracotta, metal y marble_smooth. mixed_ambiguous aparece disperso en gris por toda la nube, confirmando su naturaleza genuinamente heterogénea.*
 
@@ -342,11 +342,11 @@ Fase 2: implementación de la arquitectura MatForge, inicialmente prevista con e
 
 Actualizar el documento permanente a v1.4 con los cuatro cambios críticos derivados de la investigación, redactar la bitácora y abrir la Fase 2 de implementación de código.
 
-![Plan investigación técnica](PI/assets/captura08.png)
+![Plan investigación técnica](../assets/captura08.png)
 
 *Figura 8. Captura del plan de investigación confirmado, con los cinco puntos de alcance, incluyendo el punto 5 actualizado que menciona explícitamente la cabeza Metallic y el protocolo cuantitativo contra DeepPBR.*
 
-![Informe investigación MatForge](PI/assets/captura09.png)
+![Informe investigación MatForge](../assets/captura09.png)
 
 *Figura 9. Captura del inicio del informe de investigación recibido `Investigación_avanzada_centrada_en_MatForge.md`, mostrando el resumen ejecutivo con las cuatro conclusiones principales: renderer analítico PyTorch puro, WBCE para Metallic, Hann blending antes de renormalización y normalización ImageNet para MiT-B1.*
 
@@ -395,11 +395,11 @@ Fase 2: implementación de MatForge en PyTorch. Orden previsto: renderer Cook-To
 
 - `MatForge_Arquitectura_Permanente_v1.4.md` — documento de referencia técnica actualizado.
 
-![Render loss progresivo](PI/assets/captura10.png)
+![Render loss progresivo](../assets/captura10.png)
 
 *Figura 10. Captura de la sección 3.2 del documento permanente v1.4, mostrando la nueva tabla de activación progresiva del render loss con las tres columnas de épocas 1–5, 6–15 y 16–90, y los valores δ₁ y δ₂ para cada fase.*
 
-![Augmentación normal maps](PI/assets/captura11.png)
+![Augmentación normal maps](../assets/captura11.png)
 
 *Figura 11. Captura de la sección 6.8 del documento permanente v1.4, mostrando la tabla de transformaciones del Normal map: flip horizontal → (-X,Y,Z), flip vertical → (X,-Y,Z), rotaciones 90°/180°/270°, con la nota de advertencia sobre la obligatoriedad de aplicar la transformación de componentes además de la geométrica.*
 
@@ -452,39 +452,39 @@ Esperar la finalización del segundo tramo, épocas 20–89, y analizar logs y p
 - `training_progression.gif` — GIF de progresión visual de las 5 validaciones del primer tramo.
 - `matforge-checkpoints-ep20` — dataset Kaggle con checkpoint del tramo 0–19 para reanudación.
 
-![Renderer gradientes](PI/assets/captura12.png)
+![Renderer gradientes](../assets/captura12.png)
 
 *Figura 12. Output de la celda 6 del notebook del renderer mostrando el test de flujo de gradientes: `||grad_N|| = 0,007801`, `||grad_R|| = 0,001792`, `Loss value = 0,025485`, `Gradient flow test: PASS`.*
 
-![Grid materiales sintéticos](PI/assets/captura13.png)
+![Grid materiales sintéticos](../assets/captura13.png)
 
 *Figura 13. Imagen generada por la celda 9 del renderer: grid 3 × 3 de materiales sintéticos con roughness [0,1, 0,5, 0,9] en filas y metallic [0,0, 0,5, 1,0] en columnas bajo iluminación Cook-Torrance.*
 
-![Sampler balanceado](PI/assets/captura14.png)
+![Sampler balanceado](../assets/captura14.png)
 
 *Figura 14. Output de la celda 9 del DataLoader mostrando la distribución de grupos en 50 batches: metal al 11,0 %, wood al 24,2 %, stone_rough al 15,2 %, con confirmación `Sampler balance: OK`.*
 
-![Augmentación validada](PI/assets/captura15.png)
+![Augmentación validada](../assets/captura15.png)
 
 *Figura 15. Imagen generada por la celda 10 del DataLoader: fila 0 con la textura augmentada RGB, Normal, Roughness y Metallic, y fila 1 con la misma textura sin augmentación del split de validación.*
 
-![Perfil PVT-v2-B1](PI/assets/captura16.png)
+![Perfil PVT-v2-B1](../assets/captura16.png)
 
 *Figura 16. Output de la celda 4 del notebook de entrenamiento mostrando el perfil del modelo tras el cambio a PVT-v2-B1: parámetros del encoder, decoder y total, seguido del check de VRAM tras el forward sin gradientes.*
 
-![Panel época 0](PI/assets/captura17.png)
+![Panel época 0](../assets/captura17.png)
 
 *Figura 17. Panel de validación de la primera época del dry run, mostrando las 8 texturas de referencia con sus 7 columnas: RGB input, Normal GT, Normal pred, Rough GT, Rough pred, Metal GT y Metal pred.*
 
-![Panel época 19](PI/assets/captura18.png)
+![Panel época 19](../assets/captura18.png)
 
 *Figura 18. Panel de validación de la última época del primer tramo de entrenamiento real, mostrando la mejora visual sustancial respecto a la época 0 en los mapas de normal y roughness predichos.*
 
-![Decisión continuar Plan A](PI/assets/captura19.png)
+![Decisión continuar Plan A](../assets/captura19.png)
 
 *Figura 19. Bloque de logs del pivot decision check al final de la época 19: Normal MAE 10,88°, Roughness MAE 0,1221, Render LPIPS 0,1127, S composite 10,9805. Decisión de continuar con el Plan A.*
 
-![Reanudación segundo tramo](PI/assets/captura20.png)
+![Reanudación segundo tramo](../assets/captura20.png)
 
 *Figura 20. Primeras líneas del log del segundo tramo confirmando la reanudación correcta: `Checkpoint loaded from .../last.pt (epoch 19)`, `Resumed from epoch 19. Cosine restart: LR enc=2.0e-05 dec=6.0e-05 over 70 epochs`, `Starting training: epoch 20 → 89`.*
 
@@ -536,13 +536,13 @@ Esperar la finalización del GAN fine-tuning de 20 épocas, analizar logs y pane
 - `last_gan.pt` — checkpoint de última época del generador durante fine-tuning GAN.
 - `last_gan_disc.pt` — checkpoint de última época del discriminador durante fine-tuning GAN.
 
-![Inicio GAN fine-tuning](PI/assets/captura21.png)
+![Inicio GAN fine-tuning](../assets/captura21.png)
 
 *Figura 21. Log de confirmación del inicio correcto del GAN fine-tuning: `GAN phase: loaded generator from best_overall.pt (epoch 89)`, `GAN phase: discriminator initialized from scratch`, seguido de `GAN EPOCH 000` con MAE=10,46°, D(real)=0,511, D(fake)=0,465 y L_D=0,3464.*
 
-![Paneles GAN](PI/assets/captura22.gif)
+![Paneles GAN](../assets/captura22.gif)
 
-![Paneles GAN](PI/assets/captura22.png)
+![Paneles GAN](../assets/captura22.png)
 
 *Figura 22. Evidencia visual asociada al fine-tuning GAN: progresión de paneles de validación durante las épocas 90–120 y panel de referencia de la época 89, última época del entrenamiento del modelo sin discriminador GAN.*
 
@@ -594,11 +594,11 @@ Fase 4: evaluación cuantitativa DeepPBR frente a MatForge sobre el split de val
 - `MatForge_Informe_Tecnico_Doc3_Entrenamiento_y_Evaluacion.md` — tercer documento del informe técnico.
 - `MatForge_Ideas_Mejora_Herramienta.docx` — análisis de funcionalidades adicionales para la herramienta.
 
-![Métricas pre/post GAN](PI/assets/captura23.png)
+![Métricas pre/post GAN](../assets/captura23.png)
 
 *Figura 23. Tabla comparativa de métricas pre/post GAN mostrando la mejora de LPIPS de 0,1094, en la época 89 supervisada, a 0,0976, en la época GAN 11, la mejora de MAE Normal de 10,45° a 10,37°, y el leve retroceso de Roughness MAE de 0,1087 a 0,1117.*
 
-![Panel mejor GAN](PI/assets/captura24.png)
+![Panel mejor GAN](../assets/captura24.png)
 
 *Figura 24. Panel de validación de la época GAN 11, mejor checkpoint del fine-tuning adversarial, útil para comparar con el panel de la época 89 y evaluar la mejora de nitidez en bordes introducida por la feature matching loss.*
 
@@ -694,19 +694,19 @@ Test de inferencia del módulo SR sobre imágenes reales de materiales a baja re
 - `sr_panels/sr_panel_phase1_ep29.png` — panel de validación de Fase 1.
 - `sr_panels/sr_panel_final.png` — panel final post Fase 2.
 
-![Benchmark VRAM SR](PI/assets/captura25.png)
+![Benchmark VRAM SR](../assets/captura25.png)
 
 *Figura 25. Output del script `matforge_sr_00_vram_check.py` mostrando la tabla SUMMARY con los nueve resultados de VRAM, tres modelos por tres tamaños de tile, y el bloque de constraint check con todos los resultados marcados como PASS.*
 
-![Convergencia SR Fase 1](PI/assets/captura26.png)
+![Convergencia SR Fase 1](../assets/captura26.png)
 
 *Figura 26. Log de las últimas épocas de la Fase 1 del entrenamiento SR, mostrando la convergencia de `val_LPIPS` desde 0,2667 hasta el mínimo de 0,2380 en la época 24, seguido del mensaje `[Phase 1 complete] Best val LPIPS=0.2380` y la transición al discriminador.*
 
-![Colapso Fase 2 SR](PI/assets/captura27.png)
+![Colapso Fase 2 SR](../assets/captura27.png)
 
 *Figura 27. Log de la Fase 2 mostrando las tres épocas P2 00–02 con los valores `D(real)` y `D(fake)` convergiendo a aproximadamente 0,487–0,498, los mensajes de advertencia de colapso del discriminador y la restauración del mejor checkpoint de Fase 1.*
 
-![Panel SR mejor checkpoint](PI/assets/captura28.png)
+![Panel SR mejor checkpoint](../assets/captura28.png)
 
 *Figura 28. Panel de validación del mejor checkpoint del fine-tuning, mostrando seis texturas de referencia con las tres columnas LQ bicúbico upscalado, SR output y HQ ground truth.*
 
@@ -762,15 +762,15 @@ Inicio de la Fase 5: implementación de la aplicación Streamlit con el pipeline
 
 - `MatForge_App_Informe_Herramientas.md` — informe técnico completo de integración de herramientas, con referencias verificadas y diagramas Mermaid.
 
-![Plan herramientas app](PI/assets/captura29.png)
+![Plan herramientas app](../assets/captura29.png)
 
 *Figura 29. Captura del plan de investigación confirmado, mostrando los cinco puntos del plan: revisar documentos, consultar webs priorizadas, investigar herramientas A/B/C/D, explorar propuestas adicionales y compilar informe con referencias IEEE y diagramas Mermaid.*
 
-![Latencias CPU GPU](PI/assets/captura30.png)
+![Latencias CPU GPU](../assets/captura30.png)
 
 *Figura 30. Captura de la sección §2 del informe final mostrando la tabla de estimaciones de latencia GPU frente a CPU con los cuatro componentes del pipeline: SR, DINOv2, KNN y MatForge.*
 
-![Zoom pipeline entrada](PI/assets/captura31.png)
+![Zoom pipeline entrada](../assets/captura31.png)
 
 *Figura 31. Captura de la sección §3 del informe mostrando el diagrama Mermaid del preprocesado de entrada con slider de zoom, módulo SR opcional y entrada al pipeline MatForge, junto con la tabla de reglas de thumb 1K→1,0, 2K→0,5 y 4K→0,25.*
 
@@ -837,11 +837,11 @@ Implementación de los módulos de lógica pura: `postprocess.py`, `export.py` y
 - `src/inference.py` — tile-and-merge con Hann blending.
 - `app.py` — scaffold mínimo funcional de Streamlit.
 
-![Diagnóstico inferencia](PI/assets/captura32.png)
+![Diagnóstico inferencia](../assets/captura32.png)
 
 *Figura 32. Output del script de diagnóstico mostrando la tabla de resultados 8/9 con los steps PASS/FAIL, el log de VRAM y la detección correcta de la GPU GTX 1650 Max-Q con CUDA disponible.*
 
-![Scaffold Streamlit](PI/assets/captura33.png)
+![Scaffold Streamlit](../assets/captura33.png)
 
 *Figura 33. Captura del navegador mostrando el scaffold mínimo de Streamlit con la imagen de entrada cargada y los tres mapas PBR generados en columnas: Normal, Roughness y Metallic.*
 
@@ -894,15 +894,15 @@ Implementación de los módulos de lógica pura: `postprocess.py`, `export.py` y
 - `src/quality.py` — evaluación heurística de calidad: coherencia, continuidad, bloque y heatmap RGBA.
 - `src/export.py` — exportación multi-motor: Blender, UE5, Unity URP, Unity HDRP y Godot 4.
 
-![Clasificador verificado](PI/assets/captura34.png)
+![Clasificador verificado](../assets/captura34.png)
 
 *Figura 34. Terminal de PowerShell mostrando la verificación de `classifier.py` con imagen sintética. Output: `Group: mixed_ambiguous | Distance: 0.1491`, seguido de la lista de 8 clases esperadas, confirmando que el pipeline DINOv2 → PCA → KNN funciona correctamente.*
 
-![Imports módulos OK](PI/assets/captura35.png)
+![Imports módulos OK](../assets/captura35.png)
 
 *Figura 35. Terminal de PowerShell mostrando la verificación de importación de `postprocess.py`, `quality.py` y `export.py`, con output `all imports OK` para los tres módulos.*
 
-![Commits módulos lógica](PI/assets/captura36.png)
+![Commits módulos lógica](../assets/captura36.png)
 
 *Figura 36. Log de Git en PowerShell mostrando los cuatro commits del día con mensajes semánticos: `feat(src): material classifier`, `feat(src): postprocess module`, `feat(src): normal map quality evaluator` y `feat(src): multi-engine PBR export`.*
 
@@ -960,7 +960,7 @@ Apertura de un nuevo bloque director. Integración completa de `app.py` con todo
 - `src/sr.py` — módulo SR completo: RRDBNet ×4 autocontenido, tile-and-merge, liberación de VRAM y cabecera BSD-3-Clause.
 - `src/ui_components.py` — sistema de diseño visual completo: CSS, tipografía, componentes reutilizables, visor Three.js, slider de comparación y aviso legal.
 
-![Commits módulos restantes](PI/assets/captura37.png)
+![Commits módulos restantes](../assets/captura37.png)
 
 *Figura 37. Terminal de PowerShell mostrando los commits del día con mensajes semánticos: `feat(src): SR module`, `fix(src): sr weights_only and dead code`, `feat(src): UI design system` y `fix(src): threejs importmap CDN`. Confirmación del historial limpio del repositorio.*
 
@@ -1035,15 +1035,15 @@ Iteración B: fix del viewer Three.js, implementación de H6 Tileable, H7 Calibr
 - `assets/three/three.module.js` — Three.js r160.
 - `assets/three/OrbitControls.js` — OrbitControls r160.
 
-![Descarga Three.js](PI/assets/captura38.png)
+![Descarga Three.js](../assets/captura38.png)
 
 *Figura 38. Terminal PowerShell mostrando descarga exitosa de `OrbitControls.js` y `three.module.js` en `assets/three/`.*
 
-![Diagnóstico SR corregido](PI/assets/captura39.png)
+![Diagnóstico SR corregido](../assets/captura39.png)
 
 *Figura 39. Script de diagnóstico SR mostrando `Output mean: 121.88`, `std: 59.16`, `min: 0.0`, `max: 255.0` tras el fix de `autocast`.*
 
-![App ladrillos funcionando](PI/assets/captura40.png)
+![App ladrillos funcionando](../assets/captura40.png)
 
 *Figura 40. Aplicación funcionando en navegador con imagen de ladrillos: Normal map azulado correcto, Roughness en escala de grises, Metallic negro, grupo de material `brick_terracotta` y distancia KNN 0,054.*
 
@@ -1120,23 +1120,23 @@ Apertura de nuevo bloque director. Implementación de H8, corrección de perspec
 - `src/ui_components.py` — viewer con aspect ratio corregido, tiling, `RoomEnvironment`, color toggle, fix de `colorSpace`, slider de comparación y `render_map_grid()` con tabs.
 - `app.py` — H6 Make Tileable, H7 Calibrate by Group, comparison slider por estados, export state selector y `session_state` ampliado.
 
-![Artefactos antes padding](PI/assets/captura41.png)
+![Artefactos antes padding](../assets/captura41.png)
 
 *Figura 41. Exportaciones con artefactos de borde antes del fix de padding: borde negro de 1–2 px visible en roughness, normal map y diagnóstico de normal map.*
 
-![Exportaciones limpias](PI/assets/captura42.png)
+![Exportaciones limpias](../assets/captura42.png)
 
 *Figura 42. Exportaciones limpias tras el fix de padding simétrico, sin artefactos en ningún mapa.*
 
-![Viewer metálico RoomEnvironment](PI/assets/captura43.png)
+![Viewer metálico RoomEnvironment](../assets/captura43.png)
 
 *Figura 43. Viewer 3D con material metálico y `RoomEnvironment` activo, mostrando reflejos especulares correctos y detalle de arañazos visible.*
 
-![Herramientas en viewer](PI/assets/captura44.png)
+![Herramientas en viewer](../assets/captura44.png)
 
 *Figura 44. Viewer 3D con herramientas expandidas: Calibrate by Group, Make Tileable y Normal Map Quality visibles en sidebar.*
 
-![Comparison slider](PI/assets/captura45.png)
+![Comparison slider](../assets/captura45.png)
 
 *Figura 45. Comparison slider funcionando con Before: Raw, After: Calibrated, mapa Roughness, línea divisoria y handle ↔ visible.*
 
@@ -1231,19 +1231,19 @@ Apertura de nuevo bloque director. Implementación de H4 Batch ZIP, calibración
 - `src/ui_components.py` — cabecera sidebar y CSS design system ampliado.
 - `investigacion_pbr_estado_del_arte.md` — documento SOTA del proyecto.
 
-![Canvas perspectiva](PI/assets/captura46.png)
+![Canvas perspectiva](../assets/captura46.png)
 
 *Figura 46. Canvas de perspectiva con handles amber y overlay semitransparente, mostrando imagen vertical sin distorsión.*
 
-![Export con color](PI/assets/captura47.png)
+![Export con color](../assets/captura47.png)
 
 *Figura 47. Export ZIP con cuatro archivos, incluyendo color/albedo, sidebar con selector “Blended” visible, expander Material Blender con blend aplicado y visor 3D con color blended.*
 
-![Selector viewer estados](PI/assets/captura48.png)
+![Selector viewer estados](../assets/captura48.png)
 
 *Figura 48. Visor 3D con selectbox “Preview state”, mostrando distintos estados disponibles.*
 
-![Variaciones procedurales](PI/assets/captura49.png)
+![Variaciones procedurales](../assets/captura49.png)
 
 *Figura 49. Expander Procedural Variations con grid de cuatro variantes de roughness visible.*
 
@@ -1328,15 +1328,15 @@ Apertura de nuevo bloque director. Documentación completa bilingüe y preparaci
 - `src/postprocess.py` — intensidades de variaciones ajustadas: zonal 0,22, worn 0,55 y scale ±22 %.
 - `MatForge_App_Arquitectura_Permanente.md` — actualizado a v1.3 con decisiones de sesión 20.
 
-![Variaciones calibradas](PI/assets/captura50.png)
+![Variaciones calibradas](../assets/captura50.png)
 
 *Figura 50. Expander Procedural Variations con tres variantes nombradas: Zonal Mix, Worn Edges y Scale Shift.*
 
-![Batch ZIP procesado](PI/assets/captura51.png)
+![Batch ZIP procesado](../assets/captura51.png)
 
 *Figura 51. Batch ZIP con cuatro imágenes procesadas con éxito y carpeta de salida con subcarpetas por asset.*
 
-![Batch warnings resolución](PI/assets/captura52.png)
+![Batch warnings resolución](../assets/captura52.png)
 
 *Figura 52. Batch ZIP mostrando warnings de resolución superior a 1K, señalando las imágenes afectadas.*
 
@@ -1554,19 +1554,19 @@ Apertura de nuevo bloque de investigación para redacción de documentos académ
 - `benchmark_results/sr_grid_<textura>.png` — grids visuales SR.
 - `benchmark_results/panel_<textura>.png` — paneles cualitativos comparativos.
 
-![Tablas benchmarking](PI/assets/captura53.png)
+![Tablas benchmarking](../assets/captura53.png)
 
 *Figura 53. Output del notebook en celda 6, mostrando las tablas 1, 2 y 3 como archivos CSV.*
 
-![Grid PBR metal](PI/assets/captura54.png)
+![Grid PBR metal](../assets/captura54.png)
 
 *Figura 54. Grid visual PBR de `metal_0175`, con comparativa GT / Pix2Pix / DeepPBR / MatForge para Normal y Roughness.*
 
-![Panel cualitativo metal](PI/assets/captura55.png)
+![Panel cualitativo metal](../assets/captura55.png)
 
 *Figura 55. Panel cualitativo de `metal_0175`, con comparativa GT / MatForge / Materialize / Substance y render Blender.*
 
-![Blender shader setup](PI/assets/captura56.png)
+![Blender shader setup](../assets/captura56.png)
 
 *Figura 56. Blender — Shader Editor con nodos Principled BSDF conectados a Color, Normal Map, Roughness y Metallic, y visor 3D mostrando el material aplicado al plano.*
 
