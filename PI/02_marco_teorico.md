@@ -100,7 +100,7 @@ Las redes generativas adversariales introducen un discriminador que evalúa la p
 
 SurfaceNet [5] fue el primer trabajo en aplicar sistemáticamente una GAN basada en parches a la estimación de SVBRDF, demostrando mejoras cuantitativas y cualitativas significativas respecto a los métodos supervisados anteriores. La inestabilidad del entrenamiento adversarial temprano —documentada tanto en SurfaceNet como en el trabajo previo DeepPBR— se mitiga mediante la estrategia de activación diferida (*delayed adversarial training*): el discriminador se introduce solo cuando el generador ya ha aprendido las estructuras básicas de los mapas mediante épocas supervisadas previas [2].
 
-MatForge aplica esta estrategia: las 89 épocas supervisadas establecen las orientaciones angulares básicas, la coherencia roughness y la señal metallic antes de que el discriminador PatchGAN multiescala introduzca la presión adversarial en las 20 épocas de ajuste fino GAN.
+MatForge aplica esta estrategia: las 90 épocas de entrenamiento supervisado (épocas 0–89) establecen las orientaciones angulares básicas, la coherencia roughness y la señal metallic antes de que el discriminador PatchGAN multiescala introduzca la presión adversarial en las 20 épocas de ajuste fino GAN.
 
 ### 2.3.2 Función de pérdida compuesta de MatForgeNet
 
