@@ -4,7 +4,9 @@
 
 El proyecto alcanza el objetivo general planteado y completa con éxito seis de los siete objetivos específicos en los términos definidos al inicio del PI. El único objetivo que requiere una lectura matizada es el módulo de super-resolución, cuya mejora interna se confirma, pero no se transfiere de forma robusta al benchmarking general frente a Real-ESRGAN base.
 
-### 5.1.1 OE1 — Modelo de predicción PBR
+### 5.1.1 — Modelo de predicción PBR
+
+*Responde a: OE1*
 
 El primer objetivo específico consistía en desarrollar MatForgeNet, una arquitectura encoder-decoder capaz de predecir simultáneamente mapas Normal, Roughness y Metallic a partir de una única imagen RGB, cumpliendo tres umbrales cuantitativos: MAE angular de normales inferior a 11°, MAE de Roughness inferior a 0,12 y LPIPS inferior a 0,10.
 
@@ -12,7 +14,9 @@ El objetivo se considera cumplido. El checkpoint final `best_gan.pt` alcanzó un
 
 La principal dificultad técnica fue la inestabilidad de la fase adversarial. El discriminador PatchGAN colapsó desde la primera época GAN, con D(real) y D(fake) convergiendo a valores próximos a 0,50. Por tanto, la mejora perceptual final no debe atribuirse a una presión adversarial estable, sino principalmente a la *feature matching loss*, que continuó aportando una señal útil pese al colapso del discriminador. Esta decisión permitió conservar el mejor checkpoint perceptual sin presentar el entrenamiento GAN como un éxito pleno del discriminador.
 
-### 5.1.2 OE2 — Módulo de super-resolución especializado
+### 5.1.2 — Módulo de super-resolución especializado
+
+*Responde a: OE2*
 
 El segundo objetivo específico planteaba implementar un módulo de super-resolución ×4 basado en RRDBNet y ajustado al dominio de materiales PBR, con una mejora mínima del 10% en LPIPS respecto a Real-ESRGAN base.
 
@@ -20,7 +24,9 @@ El objetivo se considera cumplido con matiz. En la validación interna del fine-
 
 Sin embargo, el resultado no se transfirió al benchmarking general. En la evaluación final sobre 100 texturas del split de validación, Real-ESRGAN base obtuvo mejor LPIPS que MatForge SR fine-tuned. Esta divergencia se interpreta como un caso de *distribution shift*: el modelo aprendió a invertir la degradación sintética usada durante el entrenamiento, pero no generalizó con la misma eficacia a condiciones más amplias. La Fase 2 adversarial del módulo SR también colapsó, por lo que fue abortada y se adoptó el checkpoint de Fase 1. Esta limitación queda conectada directamente con las propuestas de trabajo futuro, especialmente la revisión de la cadena de degradación y la posible integración de MUJICA [38].
 
-### 5.1.3 OE3 — Pipeline de relabeling semántico y clasificador de material
+### 5.1.3 — Pipeline de relabeling semántico y clasificador de material
+
+*Responde a: OE3*
 
 El tercer objetivo específico consistía en reorganizar el dataset en grupos funcionales visualmente coherentes mediante relabeling no supervisado y serializar un clasificador de material operativo para la aplicación.
 
@@ -30,7 +36,9 @@ El clasificador KNN resultante, con k=7, métrica coseno y operación sobre el e
 
 La dificultad principal fue que las categorías originales del dataset no se correspondían siempre con propiedades visuales o físicas homogéneas. La combinación de embeddings auto-supervisados y clustering basado en densidad resolvió esta limitación sin depender de una reclasificación manual textura por textura.
 
-### 5.1.4 OE4 — Herramientas de refinado no destructivo
+### 5.1.4 — Herramientas de refinado no destructivo
+
+*Responde a: OE4*
 
 El cuarto objetivo específico planteaba integrar herramientas de refinado no destructivo que permitieran al artista corregir, ajustar y enriquecer los mapas generados sin modificar el modelo subyacente ni requerir conocimientos técnicos de aprendizaje profundo.
 
@@ -40,7 +48,9 @@ La decisión metodológica más relevante fue mantener un estado `maps_raw` inmu
 
 La mayor dificultad técnica apareció en el tratamiento de mapas de normales. Operaciones aparentemente simples, como mezclas, fundidos o conversión tileable, no pueden aplicarse sobre valores RGB empaquetados sin invalidar la norma vectorial. La solución consistió en operar sobre vectores desempacados y renormalizar en L2 siempre que el mapa Normal fuera transformado.
 
-### 5.1.5 OE5 — Exportación multi-motor con metadatos de procedencia
+### 5.1.5 — Exportación multi-motor con metadatos de procedencia
+
+*Responde a: OE5*
 
 El quinto objetivo específico consistía en implementar exportación compatible con los principales motores de renderizado y añadir metadatos de procedencia en cada PNG exportado.
 
@@ -50,7 +60,9 @@ La implementación de metadatos se resolvió mediante XMP estándar Adobe/W3C in
 
 La dificultad principal fue evitar una formulación legal excesiva. El sistema implementa metadatos útiles y verificables, pero no un estándar completo de procedencia criptográfica. Por ello, la redacción final debe limitarse a los campos realmente escritos por la aplicación.
 
-### 5.1.6 OE6 — Evaluación cuantitativa y benchmarking
+### 5.1.6 — Evaluación cuantitativa y benchmarking
+
+*Responde a: OE6*
 
 El sexto objetivo específico consistía en evaluar MatForge frente a los modelos del trabajo grupal previo y frente a herramientas representativas del flujo de producción PBR, combinando métricas cuantitativas y análisis cualitativo.
 
@@ -60,7 +72,9 @@ La comparación cualitativa con Materialize y Adobe Substance 3D Sampler muestra
 
 La principal dificultad fue diseñar una comparación justa entre sistemas heterogéneos. La solución adoptada fue separar benchmarking cuantitativo frente a modelos entrenados con datos comparables y análisis cualitativo/sistémico frente a herramientas de producción.
 
-### 5.1.7 OE7 — Accesibilidad y despliegue local
+### 5.1.7 — Accesibilidad y despliegue local
+
+*Responde a: OE7*
 
 El séptimo objetivo específico planteaba desplegar MatForge App como herramienta ejecutable localmente, sin dependencia de red en inferencia, sobre hardware de consumo y con tiempo de generación inferior a 10 segundos en GPU de 4–8 GB.
 
