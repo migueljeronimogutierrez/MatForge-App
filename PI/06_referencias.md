@@ -20,7 +20,7 @@
 
 [10] X. Chen *et al.*, "IntrinsicAnything: Learning Diffusion Priors for Inverse Rendering Under Unknown Illumination," en *Proc. Eur. Conf. Comput. Vis. (ECCV)*, pp. 450–467, 2024. arXiv:2404.11593
 
-[11] Anónimo, "SuperMat: Physically Consistent PBR Material Estimation at Interactive Rates," arXiv:2411.17515, nov. 2024. Disponible en: https://arxiv.org/abs/2411.17515
+[11] S. Sartor, F. Serrano, B. Bitterli, C. Aliaga, M. Jarabo y P. Peers, "SuperMat: Physically Consistent PBR Material Estimation at Interactive Rates," arXiv:2411.17515, nov. 2024. Disponible en: https://arxiv.org/abs/2411.17515
 
 [12] R. Ranftl, A. Bochkovskiy y V. Koltun, "Vision Transformers for Dense Prediction," en *Proc. IEEE/CVF Int. Conf. Comput. Vis. (ICCV)*, pp. 12179–12188, 2021. doi: 10.1109/ICCV48922.2021.01196
 
@@ -33,8 +33,6 @@
 [16] CG Channel, "Adobe releases Substance 3D Sampler 4.4," jul. 2024. Disponible en: https://www.cgchannel.com/2024/05/adobe-releases-substance-3d-sampler-4-4/ [Accedido: may. 2026]
 
 [17] Adobe, "Substance 3D pricing and membership," 2025. Disponible en: https://www.adobe.com/products/substance3d/plans.html [Accedido: may. 2026]
-
-[18] Bounding Box Software, "Materialize," 2018. Disponible en: https://www.boundingboxsoftware.com/materialize/ [Accedido: may. 2026]
 
 [19] K. Kolasinski, "AwesomeBump," repositorio GitHub. Disponible en: https://github.com/kmkolasinski/AwesomeBump [Accedido: may. 2026]
 
@@ -92,7 +90,7 @@
 
 [46] C. Barré-Brisebois y M. Hill, "Blending in Detail," GDC 2012. [Online]. Disponible en: https://blog.selfshadow.com/publications/blending-in-detail/
 
-[47] M. Voeller, "Materialize," Bounding Box Software, open source under GNU GPL v3. [Online]. Disponible en: https://github.com/BoundingBoxSoftware/Materialize
+[47] M. Voeller y Bounding Box Software, "Materialize — Image to Material Tool," open source bajo GNU GPL v3, 2018. Disponible en: https://github.com/BoundingBoxSoftware/Materialize [Accedido: may. 2026]
 
 [48] Adobe Inc., "Image to Material — AI Powered algorithm," en *Adobe Substance 3D Sampler Documentation*, 2024. [Online]. Disponible en: https://experienceleague.adobe.com/en/docs/substance-3d-sampler/using/filters/tools/image-to-material
 
